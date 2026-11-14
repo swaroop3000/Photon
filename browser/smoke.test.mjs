@@ -75,3 +75,43 @@ test('origin-spanning circular annotation draws two clickable map segments',asyn
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('circular feature creation, editing, and GenBank roundtrip preserve origin coordinates',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost;
+   host.working().topology='circular';
+   host.render();
+  });
+  await page.locator('.tab[data-tool="features"]').click();
+  const length=await page.locator('#se').inputValue().then(s=>s.length);
+  await page.locator('#nn').fill('Wrap test');
+  await page.locator('#ns').fill(String(length-4));
+  await page.locator('#ne').fill('3');
+  await page.locator('#na').click();
+  await page.locator('.frow').filter({hasText:'Wrap test'}).click();
+  await page.locator('#editSel').click();
+  await page.locator('#efn').fill('Wrapped edited');
+  await page.locator('#efe').fill('4');
+  await page.locator('#efv').click();
+  const result=await page.evaluate(()=>{
+   const w=window.PhotonEditorBridgeHost.working();
+   const exported=toGenBank(w),imported=parseGenBank(exported);
+   return {feature:w.features.find(f=>f.name==='Wrapped edited'),
+     reimported:imported.features.find(f=>f.name==='Wrapped edited'),
+     text:exported,topology:imported.topology};
+  });
+  assert.equal(result.feature.start,length-4);
+  assert.equal(result.feature.end,4);
+  assert.deepEqual(result.reimported,result.feature);
+  assert.match(result.text,/join\(/);
+  assert.equal(result.topology,'circular');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
