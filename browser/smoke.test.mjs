@@ -526,3 +526,52 @@ test('Photon 3.1 invalidates review when selected backbone changes',async()=>{
   assert.match(await panel.locator('#photonBackboneReview').innerText(),/Review again/);
  }finally{await browser.close();}
 });
+
+
+test('Photon 3.2 runs advisory construct QC and downloads versioned JSON without mutation',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage({acceptDownloads:true});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const w=window.PhotonEditorBridgeHost.working();
+   w.name='QCDemo';w.seq='ATGTAATAAAAAAAAAA';w.topology='linear';
+   w.features=[{name:'test CDS',type:'CDS',start:1,end:9,strand:1}];
+   window.PhotonEditorBridgeHost.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonConstructQCV32');
+  await panel.waitFor();
+  await panel.getByRole('button',{name:'Run construct QC'}).click();
+  assert.match(await panel.locator('#photonQCResult').innerText(),/QCDemo/);
+  assert.match(await panel.locator('#photonQCResult').innerText(),/Homopolymer runs/);
+  assert.match(await panel.locator('#photonQCWarnings').innerText(),/CDS_INTERNAL_STOP/);
+  assert.match(await panel.locator('#photonQCWarnings').innerText(),/HOMOPOLYMER/);
+  const downloadPromise=page.waitForEvent('download');
+  await panel.getByRole('button',{name:'Download QC JSON'}).click();
+  const download=await downloadPromise;
+  assert.equal(download.suggestedFilename(),'photon-qc-QCDemo.json');
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('Photon 3.2 refuses to export a report after the working construct changes',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonConstructQCV32');
+  await panel.getByRole('button',{name:'Run construct QC'}).click();
+  const exportButton=panel.getByRole('button',{name:'Download QC JSON'});
+  assert.equal(await exportButton.isVisible(),true);
+  await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
+  await exportButton.click();
+  assert.match(await panel.locator('#photonQCResult').innerText(),/Working construct changed/);
+  assert.equal(await exportButton.isVisible(),false);
+ }finally{await browser.close();}
+});
