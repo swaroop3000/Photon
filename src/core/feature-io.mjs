@@ -47,6 +47,15 @@ export function serializeGenbank(working){
    const loc=genbankFeatureLocation(f,length,{circular});
    const type=String(f.type||'misc_feature').replace(/[^A-Za-z0-9_]/g,'_').slice(0,15);
    lines.push('     '+type.padEnd(15)+' '+loc,'                     /label="'+safeLabel(f.name||type)+'"');
+   const qualifiers=f.qualifiers??{};
+   if(!qualifiers||typeof qualifiers!=='object'||Array.isArray(qualifiers))
+     throw new RangeError('Invalid feature qualifiers');
+   for(const [key,value] of Object.entries(qualifiers).sort(([a],[b])=>a.localeCompare(b))){
+     if(!['gene','product','note'].includes(key)||typeof value!=='string')
+       throw new RangeError('Unsupported GenBank qualifier: '+key);
+     if(/[\r\n"]/.test(value))throw new RangeError('Unsupported quote or newline in GenBank qualifier');
+     lines.push('                     /'+key+'="'+value+'"');
+   }
  }
  lines.push('ORIGIN');
  for(let i=0;i<length;i+=60)
@@ -78,8 +87,13 @@ export function parseGenbank(text){
    }else if(active){
      const label=line.match(/^\s+\/label="([^"]*)"/);
      if(label)active.name=label[1];
-     else if(/^\s+\/(gene|product)="([^"]*)"/.test(line)&&active.name===active.type)
-       active.name=line.match(/="([^"]*)"/)[1];
+     else {
+       const qualifier=line.match(/^\s+\/(gene|product|note)="([^"]*)"/);
+       if(qualifier){
+         active.qualifiers??={};
+         active.qualifiers[qualifier[1]]=qualifier[2];
+       }
+     }
    }
  }
  if(active)features.push(active);
