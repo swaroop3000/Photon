@@ -12,6 +12,7 @@ test('editor opens and dynamic modules connect to interface',async()=>{
    const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    assert.equal(await page.title(),'Photon — DNA design + version control');
    const editor=page.locator('#se');
    // If the app starts in the editor already, no navigation is needed.
@@ -38,6 +39,7 @@ test('Primer and Cloning tabs load independently without script exceptions',asyn
    const page=await browser.newPage();
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
    await page.locator('.tab[data-tool="primers"]').click();
    await page.locator('#photonPrimersV17').waitFor();
