@@ -6,7 +6,7 @@ const fixture=()=>({name:'batch',topology:'linear',seq:'AACCGGTTAACC',
 test('two separate edits use original coordinates and preserve intervening annotation',()=>{
  const w=fixture(),saved=structuredClone(w);
  const r=applyExplicitEdits(w,[{start:2,end:4,insert:'G'},{start:8,end:8,insert:'TT'}]);
- assert.equal(r.working.seq,'AAGGGTTTTTAACC');
+ assert.equal(r.working.seq,'AAGGGTTTTAACC');
  assert.deepEqual(r.working.features.map(f=>[f.start,f.end]),[[1,2],[4,5],[11,13]]);
  assert.deepEqual(w,saved);
  assert.equal(r.edits.length,2);
