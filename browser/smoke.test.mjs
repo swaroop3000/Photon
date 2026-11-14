@@ -198,9 +198,9 @@ test('external GenBank import preserves annotations and refuses unsupported join
   await page.locator('#fileIn').setInputFiles({
    name:'external.gb',mimeType:'text/plain',buffer:Buffer.from(sample)
   });
-  await page.waitForFunction(()=>window.PhotonEditorBridgeHost.working().name==='EXAMPLE02'||document.title.startsWith('Import rejected:'),null,{timeout:5000});
-  const importStatus=await page.title();
-  assert.equal(await page.evaluate(()=>window.PhotonEditorBridgeHost.working().name),'EXAMPLE02',importStatus);
+  await page.locator('#impApply').waitFor();
+  await page.locator('#impApply').click();
+  await page.waitForFunction(()=>window.PhotonEditorBridgeHost.working().name==='EXAMPLE02');
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(before.topology,'circular');
   assert.equal(before.seq,'AACCGGTTAACCGGTT');
@@ -213,7 +213,7 @@ test('external GenBank import preserves annotations and refuses unsupported join
   await page.locator('#fileIn').setInputFiles({
    name:'invalid.gb',mimeType:'text/plain',buffer:Buffer.from(invalid)
   });
-  await page.waitForFunction(()=>document.title.startsWith('Import rejected:'),{timeout:5000});
+  await page.getByRole('heading',{name:'Import rejected'}).waitFor();
   const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.deepEqual(after,before);
   assert.deepEqual(errors,[]);
