@@ -558,7 +558,8 @@ parseSBOL=function(source){
 // Photon 1.1 adapter host: keep legacy UI intact while ES module handles edits.
 window.PhotonEditorBridgeHost={
   working:()=>W(),
-  identity:()=>DB.cur+':'+repo().branch,
+  // Include the committed HEAD so an editor undo stack cannot cross a commit boundary.
+  identity:()=>DB.cur+':'+repo().branch+':'+(repo().branches[repo().branch]?.head||''),
   selectionReset:()=>{U.sel=-1;},
   save:()=>save(),
   render:()=>render(),
