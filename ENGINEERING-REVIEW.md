@@ -24,7 +24,8 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] New `parseGenbankCollection` / `serializeGenbankCollection` support multiple **individually supported** records in the core API, atomically rejecting invalid records.
 - [x] Integrate bounded (100-record maximum) GenBank collection import into browser UI, validating all records first and creating one local Photon repository per record. Browser regression tests cover success and atomic parse failure.
 - [x] Add conservative browser preflight size limits (100 records, 1 Mb total, 500 kb/record, 20k annotations), per-record size review and duplicate-name warning; these are not proof of localStorage quota sufficiency.
-- [ ] Extend collection import beyond the supported subset, and provide a full provenance review and an explicit backup/export workflow.
+- [x] Add explicit full-browser-project JSON backup and guarded restore controls, plus import rollback on failed localStorage writes. Browser regression tests included.
+- [ ] Extend collection import beyond the supported subset and provide complete provenance review and storage-quota migration.
 - [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
 - [ ] Interoperability fixtures from independently validated real records and cross-checks with Biopython / INSDC tools.
 
@@ -42,7 +43,7 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [ ] External reproducibility assessment, peer technical review, formal risk assessment and reference accuracy thresholds.
 - [x] Add minimal static release output, a Wrangler configuration for the 'photon' Worker, deployment guide and static-build CI.
 - [ ] Confirm successful Cloudflare deployment in Cloudflare build logs (GitHub Actions CI is not a deployment check).
-- [ ] Threat model for user data / localStorage migration / repository sharing.
+- [ ] Threat model for user data / localStorage migration / repository sharing; localStorage is not encrypted or durable. Restore validation needs a full versioned schema and corruption recovery assessment.
 - [ ] Formal original Genome Compiler feature inventory with evidence and explicit parity test per capability.
 
 ## Developer commands
