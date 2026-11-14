@@ -171,3 +171,49 @@ test('Photon SBOL interchange preserves circular annotations and supported quali
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('external GenBank import preserves annotations and refuses unsupported join without mutation',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  const sample=[
+   'LOCUS       EXAMPLE02             16 bp    DNA     circular',
+   'DEFINITION  Synthetic external format example.',
+   'FEATURES             Location/Qualifiers',
+   '     source          1..16',
+   '                     /organism="synthetic construct"',
+   '     CDS             complement(join(14..16,1..2))',
+   '                     /gene="wrapB"',
+   '                     /note="external flatfile"',
+   '     promoter        3..6',
+   '                     /label="promB"',
+   'ORIGIN',
+   '        1 aaccggttaaccggtt',
+   '//'
+  ].join('\n');
+  await page.locator('#fileIn').setInputFiles({
+   name:'external.gb',mimeType:'text/plain',buffer:Buffer.from(sample)
+  });
+  await page.waitForFunction(()=>window.PhotonEditorBridgeHost.working().name==='EXAMPLE02');
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(before.topology,'circular');
+  assert.equal(before.seq,'AACCGGTTAACCGGTT');
+  assert.deepEqual(before.features,[
+   {name:'wrapB',type:'CDS',start:14,end:2,strand:-1,
+     qualifiers:{gene:'wrapB',note:'external flatfile'}},
+   {name:'promB',type:'promoter',start:3,end:6,strand:1}
+  ]);
+  const invalid=sample.replace('14..16,1..2','14..15,1..2');
+  await page.locator('#fileIn').setInputFiles({
+   name:'invalid.gb',mimeType:'text/plain',buffer:Buffer.from(invalid)
+  });
+  await page.waitForFunction(()=>document.title.startsWith('Import rejected:'),{timeout:5000});
+  const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.deepEqual(after,before);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
