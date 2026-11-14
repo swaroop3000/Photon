@@ -123,7 +123,16 @@ export function parseSbol3NTriples(input){
  if(circular===linear)throw new RangeError('Missing or conflicting topology');
  if(!vals(component,pred('type')).some(v=>v.uri===DNA))throw new RangeError('Not an SBOL DNA component');
  const features=[];
- for(const node of vals(component,pred('hasFeature')).map(v=>v.uri)){
+ const featureNodes=vals(component,pred('hasFeature')).map(v=>v.uri);
+ // Photon feature identifiers encode their insertion order. RDF triples are
+ // unordered, and lexical sorting otherwise places feature10 before feature2.
+ featureNodes.sort((a,b)=>{
+   const na=Number(a?.match(/\/feature(\d+)$/)?.[1]),nb=Number(b?.match(/\/feature(\d+)$/)?.[1]);
+   if(!Number.isSafeInteger(na)||!Number.isSafeInteger(nb))
+     throw new RangeError('Unsupported feature identifier ordering');
+   return na-nb;
+ });
+ for(const node of featureNodes){
    if(!node||!vals(node,uris.rdfType).some(v=>v.uri===uris.feature))
      throw new RangeError('Unsupported feature type');
    const locs=vals(node,pred('hasLocation')).map(v=>v.uri);
