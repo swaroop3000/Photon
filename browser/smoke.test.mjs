@@ -373,3 +373,78 @@ test('circuit application rejects stale reviews after circuit edits',async()=>{
   assert.deepEqual(unchanged,before);
  }finally{await browser.close();}
 });
+
+
+test('reviewed circular backbone insertion preserves features and supports complete undo redo',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.name='pBackbone';w.seq='AACCGGTTAACC';w.topology='circular';
+   w.features=[
+    {name:'upstream',start:1,end:3,strand:1,type:'promoter'},
+    {name:'downstream',start:9,end:11,strand:-1,type:'CDS'}
+   ];
+   host.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonCircularBackboneV30');
+  await panel.waitFor();
+  await panel.locator('#photonBackboneBoundary').fill('6');
+  await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  assert.match(await panel.locator('#photonBackboneReview').innerText(),/Result: pBackbone/);
+  const apply=panel.getByRole('button',{name:'Apply reviewed circular assembly'});
+  assert.equal(await apply.isEnabled(),false);
+  await panel.locator('#photonBackboneConfirm').check();
+  await apply.click();
+  const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(after.name,'pBackbone');
+  assert.equal(after.topology,'circular');
+  assert.equal(after.seq.length,54);
+  assert.equal(after.features.length,7);
+  assert.deepEqual(after.features.slice(0,2).map(f=>[f.name,f.start,f.end]),[
+   ['upstream',1,3],['downstream',51,53]]);
+  assert.equal(after.features[2].start,7);
+  const gb=await page.evaluate(()=>{
+   const w=window.PhotonEditorBridgeHost.working();
+   const encoded=toGenBank(w),imported=parseGenBank(encoded);
+   return {seq:imported.seq,topology:imported.topology,features:imported.features};
+  });
+  assert.equal(gb.seq,after.seq);
+  assert.equal(gb.topology,'circular');
+  assert.deepEqual(gb.features,after.features);
+  await page.locator('.tab[data-tool="features"]').click();
+  await page.locator('#ub').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  await page.locator('#rb').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('circular backbone review refuses insertion that splits an existing feature',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.name='pBackbone';w.seq='AACCGGTTAACC';w.topology='circular';
+   w.features=[{name:'protected',start:1,end:4,strand:1,type:'CDS'}];
+   host.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonCircularBackboneV30');
+  await panel.locator('#photonBackboneBoundary').fill('2');
+  await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  assert.match(await panel.locator('#photonBackboneReview').innerText(),/split backbone feature: protected/);
+  assert.equal(await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).isVisible(),false);
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+ }finally{await browser.close();}
+});
