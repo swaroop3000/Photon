@@ -669,6 +669,8 @@ test('Photon 3.4 exports request and accepts template-validated Primer3 results'
      name:'fixture-primer3.json',mimeType:'application/json',
      buffer:Buffer.from(JSON.stringify(fixture))
    });
+   await page.waitForFunction(()=>document.querySelector('#photonPrimer3ResultsV34')?.textContent?.includes('validated pair')||
+     document.querySelector('#photonPrimer3ResultsV34')?.textContent?.includes('Primer3 import rejected:'),null,{timeout:5000});
    assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/1 validated pair/);
    assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/Primer3-py 2.4.0/);
    assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
