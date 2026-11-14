@@ -801,3 +801,48 @@ test('missing DNA module fails closed instead of running unsafe sequence-only fa
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),original);
  }finally{await browser.close();}
 });
+
+test('explicit mixed indel batch creates one reversible construct revision',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.seq='AACCGGTTAACC';w.topology='linear';
+   w.features=[{name:'up',start:1,end:2,type:'misc'},
+    {name:'middle',start:5,end:6,type:'misc'},
+    {name:'down',start:10,end:12,type:'misc'}];
+   host.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(await page.evaluate(()=>window.PhotonEditorHistory.applyEdits([
+    {start:2,end:4,insert:'G'},{start:8,end:8,insert:'TT'}])),true);
+  const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(after.seq,'AAGGGTTTTAACC');
+  assert.deepEqual(after.features.map(f=>[f.start,f.end]),[[1,2],[4,5],[11,13]]);
+  await page.locator('#ub').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  await page.locator('#rb').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('wrapped feature highlights both arms in sequence preview',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.seq='AACCGGTTAACC';w.topology='circular';
+   w.features=[{name:'wrap',start:10,end:3,type:'CDS',strand:1}];
+   host.render();
+  });
+  const preview=page.locator('#sv');
+  assert.equal(await preview.locator('.b').count(),6);
+ }finally{await browser.close();}
+});
