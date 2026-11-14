@@ -528,7 +528,7 @@ const _renderZ=render;
 render=function(){if(DB.tab==='home'||DB.tab==='overview'){renderChrome();renderNav();const v=document.getElementById('view');(DB.tab==='home'?renderHome:renderOverview)(v);return;}_renderZ();};
 (function(){const tb=document.querySelector('.topbar');if(tb&&!document.getElementById('homeBtn')){const h=document.createElement('button');h.id='homeBtn';h.className='btn sm';h.textContent='⌂ Repos';h.title='All repositories';h.onclick=()=>{DB.tab='home';render();};const rd=document.getElementById('repoBtn').closest('.dd');tb.insertBefore(h,rd);}})();
 const _photonRenderMap=renderMap;
-renderMap=function(){_photonRenderMap();window.PhotonRestrictionOverlay?.render?.();window.PhotonPrimerMap?.render?.();};
+renderMap=function(){document.querySelectorAll('.maptab[data-v]').forEach(t=>t.classList.toggle('active',t.dataset.v===U.mapView));_photonRenderMap();window.PhotonWrappedFeatures?.render?.();window.PhotonRestrictionOverlay?.render?.();window.PhotonPrimerMap?.render?.();};
 render();
 // Photon 1.1 adapter host: keep legacy UI intact while ES module handles edits.
 window.PhotonEditorBridgeHost={
@@ -551,5 +551,6 @@ window.PhotonEditorBridgeHost={
 <script type="module" src="./src/ui/primer-design-tools.mjs"></script>
 <script type="module" src="./src/ui/primer-map.mjs"></script>
 <script type="module" src="./src/ui/primer-mismatch-tools.mjs"></script>
+<script type="module" src="./src/ui/wrapped-features.mjs"></script>
 </body>
 </html>
