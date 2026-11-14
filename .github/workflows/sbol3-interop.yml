@@ -1,0 +1,41 @@
+name: SBOL3 pySBOL3 interoperability
+
+on:
+  pull_request:
+  push:
+    branches:
+      - feature/photon-1-core-engine
+
+permissions:
+  contents: read
+
+jobs:
+  sbol3-interop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent SBOL3 reader
+        run: python -m pip install 'sbol3>=1.2,<2'
+      - name: Generate RDF N-Triples from Photon
+        run: node tests/emit-sbol3-fixture.mjs > /tmp/photon-sbol3.nt
+      - name: Read Photon RDF with pySBOL3
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-sbol3.nt', encoding='utf-8') as f:
+              content = f.read()
+          doc.read_string(content, sbol3.NTRIPLES)
+          component = doc.find('https://photon.app/sbol3/ReferenceConstruct')
+          assert component is not None, "Missing SBOL3 Component"
+          assert len(component.sequences) == 1, "Missing linked DNA sequence"
+          assert len(component.features) == 2, "Missing feature annotations"
+          print('pySBOL3 independently parsed Component, sequence and two features')
+          PY
