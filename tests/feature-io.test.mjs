@@ -49,6 +49,54 @@ test('GenBank supported qualifiers survive round-trip with coordinates and stran
  assert.equal(result.seq,input.seq);
 });
 test('GenBank unsupported qualifiers are rejected instead of silently discarded',()=>{
- assert.throws(()=>serializeGenbank({...w,features:[{...w.features[0],qualifiers:{unknown:'x'}}]}),
+ assert.throws(()=>serializeGenbank({...w,features:[{...w.features[0],qualifiers:{'not valid':'x'}}]}),
   /Unsupported GenBank qualifier/);
+});
+
+
+const externalGenbank=[
+ 'LOCUS       EXAMPLE01             24 bp    DNA     circular',
+ 'DEFINITION  Example external GenBank-style record.',
+ 'FEATURES             Location/Qualifiers',
+ '     source          1..24',
+ '                     /organism="synthetic construct"',
+ '     CDS             complement(join(21..24,1..4))',
+ '                     /gene="testA"',
+ '                     /product="synthetic peptide"',
+ '     promoter        5..10',
+ '                     /label="promA"',
+ '                     /note="simple annotation"',
+ '     misc_feature    14',
+ '                     /label="single base"',
+ 'ORIGIN',
+ '        1 aaccggttaacc ggttaaccggtt',
+ '//'
+].join('\\n');
+
+test('external GenBank-style record imports source, wrapped, reverse and single-base locations',()=>{
+ const parsed=parseGenbank(externalGenbank);
+ assert.equal(parsed.name,'EXAMPLE01');
+ assert.equal(parsed.topology,'circular');
+ assert.equal(parsed.seq,'AACCGGTTAACCGGTTAACCGGTT');
+ assert.deepEqual(parsed.features,[
+  {name:'testA',type:'CDS',start:21,end:4,strand:-1,
+   qualifiers:{gene:'testA',product:'synthetic peptide'}},
+  {name:'promA',type:'promoter',start:5,end:10,strand:1,
+   qualifiers:{note:'simple annotation'}},
+  {name:'single base',type:'misc_feature',start:14,end:14,strand:1}
+ ]);
+ assert.deepEqual(parseGenbank(serializeGenbank(parsed)).features,parsed.features);
+});
+test('external GenBank unsupported fuzzy, multi-exon or remote features fail closed',()=>{
+ for(const bad of ['<4..8','join(2..4,8..12)','AB123:2..5','order(1..2,4..5)']){
+   assert.throws(()=>parseGenbank(externalGenbank.replace('5..10',bad)),/Unsupported/);
+ }
+});
+test('external GenBank malformed ORIGIN and mismatched declared length fail',()=>{
+ assert.throws(()=>parseGenbank(externalGenbank.replace('24 bp','25 bp')),/length differs/);
+ assert.throws(()=>parseGenbank(externalGenbank.replace('aaccggttaacc','aacxggttaacc')),/Invalid DNA base/);
+});
+test('external GenBank multiline qualifiers are rejected rather than silently truncated',()=>{
+ const altered=externalGenbank.replace('/product="synthetic peptide"','/product="synthetic\\n                     peptide"');
+ assert.throws(()=>parseGenbank(altered),/Unsupported GenBank qualifier|Multiline/);
 });
