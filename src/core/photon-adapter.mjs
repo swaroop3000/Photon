@@ -84,7 +84,7 @@ export function applySequenceRevision(working, proposedSequence) {
   }
   const coreFeatures = working.features.map(f => {
     assertLegacyFeature(f, before.length);
-    return { ...f, start: f.start - 1 };
+    return { ...structuredClone(f), start: f.start - 1 };
   });
   const prev = cloneState(working);
   if (before === after) return { working: prev, changed: false, affectedFeatures: [], edit: null };
