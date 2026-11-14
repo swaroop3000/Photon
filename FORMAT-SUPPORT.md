@@ -60,3 +60,16 @@ The export represents each part as an SBOL 3 `Component` with its own `Sequence`
 The pure core module also supports a strict multi-component N-Triples reader for the defined Photon assembly graph. An independent GitHub Actions test loads the exported graph in pySBOL3 and runs document validation, checking three child components and their locations.
 
 **Limitations:** This is a deterministic *sequence concatenation*, not Gibson/Golden Gate chemistry or a predicted laboratory result. The Builder preview does not mutate the current Photon construct. The strict reader is not wired as a general multi-component file importer. Multi-level hierarchies, mixed molecule types, complex location relationships, external RDF syntaxes, and general multi-component interoperability remain out of scope.
+
+
+## Photon 2.7 — Reusable DNA parts and nested SBOL 3 hierarchies
+
+The **Builder** tab now includes a reusable part library. Each `part` has a stable identifier and DNA sequence. Each `assembly` references an ordered list of existing parts or other assemblies, with explicit `+` and `-` strand orientations. References may be reused in several placements, including more than once in one parent.
+
+A reverse-oriented nested assembly is expanded with its child placement order reversed and each child orientation inverted, preserving reverse-complement sequence semantics. The resolver rejects missing references, cycles, invalid IDs, excessive nesting depth or sequence lengths, and ambiguous/unsupported sequence data.
+
+Libraries can be saved in browser local storage scoped to the active Photon repository and branch, exported as **Photon part-library JSON**, or imported from that JSON. This is not a hosted shared library or a collaborative database; clearing browser storage can remove locally saved definitions. The Builder preview shows a colored component track, 1-based ranges, and nested reference paths without modifying the working construct.
+
+The hierarchy exporter emits SBOL 3 N-Triples with reusable `Component` objects, linked `Sequence` objects, and `SubComponent` relationships for each direct placement. One component can be referenced by multiple instances. GitHub CI loads the hierarchy with **pySBOL3**, checks the nested references, and runs `Document.validate()`.
+
+**Scope:** Linear, double-stranded DNA sequence concatenation; no assembly reaction chemistry, no circular assembly, no plasmid commit/snapshot integration, and no general-purpose hierarchical RDF importer yet. The available graphical track is a simple non-destructive preview rather than a drag-and-drop circuit editor.
