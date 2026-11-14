@@ -1,0 +1,47 @@
+name: Real Primer3 engine integration
+
+on:
+  push:
+    branches:
+      - feature/photon-1-core-engine
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  primer3-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install actual primer3-py 2.4.0
+        run: python -m pip install 'primer3-py==2.4.0'
+      - name: Construct deterministic synthetic template
+        run: |
+          python - <<'PY'
+          import json, random
+          rng=random.Random(31)
+          sequence=''.join(rng.choice('ACGT') for _ in range(600))
+          request={
+             'format':'photon/primer3-request/1','engine':'primer3-py-local',
+             'name':'SyntheticCI','sequence':sequence,
+             'options':{
+               'minProduct':90,'maxProduct':230,'maxPairs':5,
+               'minSize':18,'optSize':20,'maxSize':25,
+               'minTm':57,'optTm':60,'maxTm':63
+             }
+          }
+          with open('/tmp/primer3-request.json','w') as f:
+            json.dump(request,f)
+          PY
+      - name: Execute real Primer3 and validate returned pairs
+        run: |
+          python scripts/primer3_runner.py /tmp/primer3-request.json /tmp/primer3-results.json
+          node tests/check-primer3-result.mjs /tmp/primer3-request.json /tmp/primer3-results.json
