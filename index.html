@@ -565,6 +565,14 @@ window.PhotonEditorBridgeHost={
   render:()=>render(),
   message:(msg)=>flash(msg)
 };
+// Protect annotated constructs if ES module scripts cannot load (including file://).
+// The legacy inline editor writes sequence-only snapshots and is not safe.
+document.addEventListener('click',event=>{
+ const target=event.target instanceof Element?event.target.closest('#ap,#ub,#rb'):null;
+ if(!target||!target.closest('#view')||window.PhotonEditorBridgeReady)return;
+ event.preventDefault();event.stopImmediatePropagation();
+ flash('Safe DNA editor unavailable. Run Photon using a local HTTP server (python -m http.server 8765) or the hosted site.');
+},true);
 //__P1__
 </script>
 <script type="module" src="./src/ui/editor-bridge.mjs"></script>
