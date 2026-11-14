@@ -42,7 +42,9 @@ test('invalid record aborts GenBank collection without changing browser reposito
    {name:'Valid',seq:'AACCGGTT',topology:'linear',features:[]},
    {name:'Invalid',seq:'AACCGGTT',topology:'linear',features:[]}
   ]));
-  const corrupted=text.replace(/(LOCUS\\s+Invalid[\\s\\S]*?ORIGIN\\s*\\n\\s*1\\s+)a/i,'$1x');
+  const pieces=text.split('//\n');
+  assert.equal(pieces.length,3);
+  const corrupted=pieces[0]+'//\n'+pieces[1].replace('1 aaccggtt','1 xaccggtt')+'//\n';
   assert.notEqual(corrupted,text);
   await page.locator('#fileIn').setInputFiles({name:'bad.gb',mimeType:'text/plain',buffer:Buffer.from(corrupted)});
   await page.getByText('Collection import rejected').waitFor();
