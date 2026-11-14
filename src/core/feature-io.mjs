@@ -79,7 +79,13 @@ export function parseGenbank(text){
  const topology=/\bcircular\b/i.test(locus[3])?'circular':'linear';
  const origin=text.search(/^ORIGIN(?:\s.*)?$/mi);
  if(origin<0)throw new RangeError('Missing GenBank ORIGIN section');
- const originBody=text.slice(origin).replace(/^ORIGIN[^\r\n]*(?:\r?\n)?/i,'').split(/^\/\//m)[0];
+ // The current importer models one construct. Refuse concatenated records or
+ // unterminated records instead of silently dropping sequences and features.
+ const recordEnds=[...text.matchAll(/^\/\/\s*$/gm)];
+ if(recordEnds.length!==1 || text.slice(recordEnds[0].index+recordEnds[0][0].length).trim())
+   throw new RangeError('Expected exactly one terminated GenBank record');
+ const originBody=text.slice(origin,recordEnds[0].index)
+   .replace(/^ORIGIN[^\r\n]*(?:\r?\n)?/i,'');
  const seqLines=originBody.split(/\r?\n/).filter(l=>l.trim());
  const seq=normalizeDNA(seqLines.map(l=>{
    const match=l.match(/^\s*\d+\s+([A-Za-z\s]+)$/);
