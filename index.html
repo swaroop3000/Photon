@@ -536,7 +536,7 @@ const _photonLegacyGenbankExport=toGenBank;
 toGenBank=function(w){return window.PhotonFeatureIO?.serialize?.(w)??_photonLegacyGenbankExport(w);};
 const _photonLegacyGenbankImport=parseGenBank;
 parseGenBank=function(source){
- if(/Exported from Photon \(limited GenBank subset\)/.test(source)&&window.PhotonFeatureIO)
+ if((/Exported from Photon \(limited GenBank subset\)/.test(source)||/\bjoin\s*\(/i.test(source))&&window.PhotonFeatureIO)
    return window.PhotonFeatureIO.parse(source);
  return _photonLegacyGenbankImport(source);
 };
