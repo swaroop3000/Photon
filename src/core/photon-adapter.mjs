@@ -3,6 +3,7 @@
  * This module deliberately does not modify the legacy HTML or localStorage.
  */
 import { normalizeDNA, editSequence } from './dna.mjs';
+import { applyCircularGapEdit } from './circular-edit.mjs';
 
 function assertLegacyFeature(f, length) {
   if (!f || !Number.isSafeInteger(f.start) || !Number.isSafeInteger(f.end)
@@ -37,8 +38,8 @@ export function applySequenceRevision(working, proposedSequence) {
   const hasWrapped = working.features.some(f => f.start > f.end);
   if(hasWrapped) {
     if(working.topology!=='circular') throw new RangeError('Origin-spanning features require circular DNA');
-    if(before!==after) throw new RangeError('Sequence edits with origin-spanning features require reannotation; no bases were changed');
-    return {working:cloneState(working),changed:false,affectedFeatures:[],edit:null};
+    if(before===after) return {working:cloneState(working),changed:false,affectedFeatures:[],edit:null};
+    return applyCircularGapEdit(working,boundsForReplacement(before,after));
   }
   const coreFeatures = working.features.map(f => {
     assertLegacyFeature(f, before.length);
