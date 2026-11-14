@@ -24,10 +24,30 @@ function boundsForReplacement(oldSeq, newSeq) {
   }
   return { start: left, end: oldRight, insert: newSeq.slice(left, newRight) };
 }
+/**
+ * Represent independent substitutions as separate edits only for equal-length
+ * replacements. An insertion/deletion changes coordinate alignment; without
+ * verified anchors, the conservative contiguous edit remains safer.
+ * End-to-start order ensures earlier original coordinates remain valid.
+ */
+export function revisionEdits(oldSeq, newSeq) {
+  const before = normalizeDNA(oldSeq), after = normalizeDNA(newSeq);
+  if (before.length !== after.length) return before===after ? [] : [boundsForReplacement(before,after)];
+  const edits = [];
+  let i = 0;
+  while (i < before.length) {
+    if (before[i] === after[i]) { i++; continue; }
+    const start = i;
+    while (i < before.length && before[i] !== after[i]) i++;
+    edits.push({start,end:i,insert:after.slice(start,i)});
+  }
+  return edits.reverse();
+}
 /** Apply an edit to a legacy Photon construct without mutating input.
  * Features intersecting an edited region are marked affected for review.
- * A whole-sequence replacement is approximated by one minimal contiguous edit;
- * for multiple disjoint changes, the span between them will be marked affected.
+ * Equal-length disjoint substitutions are treated as independent edits.
+ * Insertions/deletions are conservatively represented as one contiguous edit,
+ * which may flag intervening annotations for manual review.
  */
 export function applySequenceRevision(working, proposedSequence) {
   const before = normalizeDNA(working.seq);
@@ -52,7 +72,15 @@ export function applySequenceRevision(working, proposedSequence) {
   if(hasWrapped) {
     if(working.topology!=='circular') throw new RangeError('Origin-spanning features require circular DNA');
     if(before===after) return {working:cloneState(working),changed:false,affectedFeatures:[],edit:null};
-    return applyCircularGapEdit(working,boundsForReplacement(before,after));
+    const edits = revisionEdits(before,after);
+    let current = cloneState(working),last=null;
+    for (const edit of edits) {
+      last = applyCircularGapEdit(current,edit);
+      current = last.working;
+    }
+    return {working:current,changed:true,
+      affectedFeatures:current.features.filter(f=>f.affected).map(f=>f.name??'(unnamed)'),
+      edit:edits.length===1?edits[0]:null,edits};
   }
   const coreFeatures = working.features.map(f => {
     assertLegacyFeature(f, before.length);
@@ -60,8 +88,11 @@ export function applySequenceRevision(working, proposedSequence) {
   });
   const prev = cloneState(working);
   if (before === after) return { working: prev, changed: false, affectedFeatures: [], edit: null };
-  const edit = boundsForReplacement(before, after);
-  const result = editSequence(before, coreFeatures, edit);
+  const edits = revisionEdits(before, after);
+  let result = {sequence:before,features:coreFeatures};
+  for (const edit of edits) {
+    result = editSequence(result.sequence, result.features, edit);
+  }
   // A zero-length annotation has no valid representation in the legacy
   // 1-based inclusive model. Reject the transaction rather than silently
   // dropping a feature from the construct and its future commits.
@@ -71,9 +102,12 @@ export function applySequenceRevision(working, proposedSequence) {
   const features = result.features.map(f => {
     const { affected, ...rest } = f;
     return { ...rest, start: f.start + 1, ...(affected ? { affected: true } : {}) };
-  }).filter(f => f.end >= f.start && f.start >= 1 && f.end <= after.length);
+  });
+  if (features.some(f => f.end < f.start || f.start < 1 || f.end > after.length)) {
+    throw new RangeError('Edit produces invalid annotation coordinates; reannotation required');
+  }
   const affectedFeatures = features.filter(f => f.affected).map(f => f.name ?? '(unnamed)');
-  return { working: { ...prev, seq: result.sequence, features }, changed: true, affectedFeatures, edit };
+  return { working: { ...prev, seq: result.sequence, features }, changed: true, affectedFeatures, edit: edits.length===1?edits[0]:null, edits };
 }
 /** History stores full sequence+feature snapshots (not sequence-only).
  * Bound history is intentionally ephemeral; caller decides how to persist it.
