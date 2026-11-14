@@ -493,7 +493,42 @@ function openPalette(){const cmds=paletteCommands();let sel=0;const wrap=documen
 const _augmentCode2=augmentCode;augmentCode=function(){_augmentCode2();try{const ap=document.getElementById('ap');if(ap)ap.onclick=applyWithResolution;}catch(e){}injectInspectorAndShelf();};
 const _renderSeqView2=renderSeqView;renderSeqView=function(){_renderSeqView2();enhanceSeqView();};
 document.querySelectorAll('#expDD button').forEach(b=>b.onclick=()=>{document.getElementById('expDD').classList.remove('open');exportWithReport(b.dataset.f);});
-(function(){const fi=document.getElementById('fileIn');const c=fi.cloneNode(true);fi.parentNode.replaceChild(c,fi);c.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(/\.dna$/i.test(f.name)){modal('<h2 class="ph">SnapGene .dna import <span class="lblchip">mock</span></h2><div class="sub">Binary .dna parsing needs a dedicated decoder. This placeholder shows where it would load.</div><button class="btn primary" onclick="closeModal()">OK</button>');e.target.value='';return;}let text='';try{text=await f.text();}catch(err){text=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result));fr.readAsText(f);});}let d;try{d=detect(text);}catch(error){modal('<h2 class="ph">Import rejected</h2><div class="sub">'+esc(error.message)+'</div><button class="btn" onclick="closeModal()">Close</button>');e.target.value='';return;}if(d._bundle){importBundle(d._bundle);e.target.value='';return;}const fmt=/^<[^>]+> <http:\/\/sbols\.org\/v3#[^>]+> /m.test(text)?'SBOL3':/<sbol/i.test(text)?'SBOL':/\.(fa|fasta|fna)$/i.test(f.name)?'FASTA':/LOCUS|ORIGIN/i.test(text)?'GenBank':'raw';const carries={FASTA:'Sequence only — annotations/history NOT carried.',GenBank:'Sequence + features/qualifiers — history/provenance NOT carried.',SBOL:'Photon XML only — full UI history NOT carried.',SBOL3:'SBOL 3 RDF subset; Photon extension data retained, history NOT carried.',raw:'Bases only.'}[fmt];const srcHash=await digestHex(text),seqHash=await digestHex(d.seq);
+(function(){const fi=document.getElementById('fileIn');const c=fi.cloneNode(true);fi.parentNode.replaceChild(c,fi);c.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(/\.dna$/i.test(f.name)){modal('<h2 class="ph">SnapGene .dna import <span class="lblchip">mock</span></h2><div class="sub">Binary .dna parsing needs a dedicated decoder. This placeholder shows where it would load.</div><button class="btn primary" onclick="closeModal()">OK</button>');e.target.value='';return;}let text='';try{text=await f.text();}catch(err){text=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result));fr.readAsText(f);});}
+// Photon multi-record GenBank: validate ALL records before changing any local project.
+// A collection becomes separate local Photon repositories. This is deliberately
+// capped to avoid accidentally filling browser storage from a large flatfile.
+if((text.match(/^LOCUS\s/gm)||[]).length>1){
+ let records;
+ try{
+  if(!window.PhotonFeatureIO?.parseCollection)throw new Error('GenBank collection codec unavailable. Serve Photon over HTTP.');
+  records=window.PhotonFeatureIO.parseCollection(text,{maxRecords:100});
+ }catch(error){
+  modal('<h2 class="ph">Collection import rejected</h2><div class="sub">'+esc(error.message)+'</div><button class="btn" onclick="closeModal()">Close</button>');
+  e.target.value='';return;
+ }
+ const totalBp=records.reduce((sum,r)=>sum+r.seq.length,0);
+ const featureCount=records.reduce((sum,r)=>sum+r.features.length,0);
+ modal('<h2 class="ph">GenBank collection import</h2><div class="sub">All records passed the supported GenBank subset parser. Import each as a separate local repository; nothing will be merged into the current construct.</div><div class="li">'+records.length+' records · '+totalBp+' bp · '+featureCount+' feature(s)</div><div class="li" style="color:var(--partial)">Unsupported INSDC grammar is rejected. Imported repositories are local browser data, not GitHub repositories; back them up with Photon JSON exports.</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="impCollection">Create '+records.length+' repositories</button><button class="btn" onclick="closeModal()">Cancel</button></div>');
+ document.getElementById('impCollection').onclick=()=>{
+  const previous=DB.cur,created=[];
+  try{
+   for(const d of records){
+    const rid=uid(),cid=uid(),s={name:d.name,seq:d.seq,topology:d.topology,features:d.features};
+    DB.repos[rid]={id:rid,name:d.name,desc:'Imported GenBank collection',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Import GenBank record',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+d.name}],readme:'# '+d.name};
+    created.push(rid);
+   }
+   DB.cur=created[0];DB.tab='code';save();
+  }catch(error){
+   for(const rid of created)delete DB.repos[rid];
+   DB.cur=previous;
+   flash('Collection import failed: '+error.message);
+   return;
+  }
+  closeModal();flash('Imported '+records.length+' GenBank records into separate local repositories');render();
+ };
+ e.target.value='';return;
+}
+let d;try{d=detect(text);}catch(error){modal('<h2 class="ph">Import rejected</h2><div class="sub">'+esc(error.message)+'</div><button class="btn" onclick="closeModal()">Close</button>');e.target.value='';return;}if(d._bundle){importBundle(d._bundle);e.target.value='';return;}const fmt=/^<[^>]+> <http:\/\/sbols\.org\/v3#[^>]+> /m.test(text)?'SBOL3':/<sbol/i.test(text)?'SBOL':/\.(fa|fasta|fna)$/i.test(f.name)?'FASTA':/LOCUS|ORIGIN/i.test(text)?'GenBank':'raw';const carries={FASTA:'Sequence only — annotations/history NOT carried.',GenBank:'Sequence + features/qualifiers — history/provenance NOT carried.',SBOL:'Photon XML only — full UI history NOT carried.',SBOL3:'SBOL 3 RDF subset; Photon extension data retained, history NOT carried.',raw:'Bases only.'}[fmt];const srcHash=await digestHex(text),seqHash=await digestHex(d.seq);
  modal(`<h2 class="ph">Import fidelity report</h2><div class="sub">Your original file is preserved; review before it touches the project.</div><div class="li"><b>${esc(f.name)}</b> · detected ${fmt}</div><div class="li">${text.length} bytes · sequence ${d.seq.length} bp · ${d.features.length} feature(s) parsed</div><div class="li" style="color:var(--partial)">${carries}</div><div class="li mono" style="font-size:11px">source SHA-256: ${srcHash}<br>sequence SHA-256: ${seqHash}</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="impApply">Apply to current</button><button class="btn" id="impNew">Open as new repo</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
  document.getElementById('impApply').onclick=()=>{const w=W();w.name=d.name;w.seq=d.seq;w.topology=d.topology;w.features=d.features;if(fmt!=='GenBank'&&fmt!=='SBOL'&&fmt!=='SBOL3')autoAnn(w);U.sel=-1;closeModal();save();flash('Imported '+f.name);render();};
  document.getElementById('impNew').onclick=()=>{const s={name:d.name,seq:d.seq,topology:d.topology,features:d.features};if(fmt!=='GenBank'&&fmt!=='SBOL'&&fmt!=='SBOL3')autoAnn(s);const rid=uid(),cid=uid();DB.repos[rid]={id:rid,name:d.name,desc:'Imported '+fmt,stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Import '+f.name,author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+d.name}],readme:'# '+d.name};DB.cur=rid;DB.tab='code';closeModal();save();flash('Imported as new repo');render();};
