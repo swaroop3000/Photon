@@ -71,3 +71,40 @@ test('wrapped circular annotations shift during safe gap insertion and undo rest
  assert.equal(h.current.seq,w.seq);
  assert.equal(h.redo().seq,newSeq);
 });
+
+test('no-op validation rejects malformed annotations before preserving history',()=>{
+ const w=sample();w.features[1].end=w.seq.length+1;
+ assert.throws(()=>applySequenceRevision(w,w.seq),/Invalid 1-based/);
+ const h=createEditorHistory(sample());h.apply('AACCATTAACC');
+ const before=h.current;
+ assert.equal(before.features[1].affected,true);
+ assert.equal(h.canUndo,true);
+});
+test('fully deleting an annotated feature is rejected transactionally',()=>{
+ const w={name:'deletion',topology:'linear',seq:'AACCGGTTAACC',
+   features:[{name:'essential',start:5,end:6,strand:1,type:'CDS'}]};
+ const h=createEditorHistory(w);
+ // Replacement deletes the annotated bases entirely.
+ assert.throws(()=>h.apply('AACCTTAACC'),/erase an annotation/);
+ assert.deepEqual(h.current,w);
+ assert.equal(h.canUndo,false);
+ assert.equal(h.canRedo,false);
+});
+test('insertion and downstream annotation liftover survive undo redo',()=>{
+ const w=sample(),h=createEditorHistory(w);
+ const r=h.apply(w.seq.slice(0,3)+'TT'+w.seq.slice(3));
+ assert.equal(r.changed,true);
+ assert.deepEqual(h.current.features.map(f=>[f.start,f.end]),[[1,2],[6,9],[11,12]]);
+ assert.deepEqual(h.undo(),w);
+ assert.deepEqual(h.redo(),r.working);
+});
+test('sequential edits and undo do not mutate previous commit snapshots',()=>{
+ const original=sample(),snapshot=structuredClone(original),h=createEditorHistory(original);
+ h.apply(original.seq+'C');
+ h.apply(original.seq+'CG');
+ assert.equal(h.current.seq,original.seq+'CG');
+ assert.equal(h.undo().seq,original.seq+'C');
+ assert.equal(h.undo().seq,original.seq);
+ assert.equal(h.redo().seq,original.seq+'C');
+ assert.deepEqual(original,snapshot);
+});
