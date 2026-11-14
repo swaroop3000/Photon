@@ -56,3 +56,18 @@ test('origin-spanning features are preserved on no-op and block unsafe sequence 
  assert.throws(()=>applySequenceRevision(w,w.seq+'A'),/reannotation/);
  assert.equal(w.seq,'AACCGGTTAACC');
 });
+
+
+test('wrapped circular annotations shift during safe gap insertion and undo restores them',()=>{
+ const w=sample();
+ w.topology='circular';
+ w.features=[{name:'wrap',start:10,end:3,strand:1}];
+ const h=createEditorHistory(w);
+ const newSeq=w.seq.slice(0,5)+'GG'+w.seq.slice(5);
+ const result=h.apply(newSeq);
+ assert.equal(result.changed,true);
+ assert.deepEqual([h.current.features[0].start,h.current.features[0].end],[12,3]);
+ assert.deepEqual([h.undo().features[0].start,h.current.features[0].end],[10,3]);
+ assert.equal(h.current.seq,w.seq);
+ assert.equal(h.redo().seq,newSeq);
+});
