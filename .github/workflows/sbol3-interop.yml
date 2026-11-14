@@ -37,5 +37,8 @@ jobs:
           assert component is not None, "Missing SBOL3 Component"
           assert len(component.sequences) == 1, "Missing linked DNA sequence"
           assert len(component.features) == 2, "Missing feature annotations"
-          print('pySBOL3 independently parsed Component, sequence and two features')
+          report = doc.validate()
+          print('pySBOL3 validation:', report)
+          assert len(report.errors) == 0, 'pySBOL3 reported validation errors'
+          print('pySBOL3 independently validated Component, sequence and two features')
           PY
