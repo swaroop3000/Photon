@@ -246,3 +246,20 @@ test('SBOL3 N-Triples export and reviewed file import preserve circular features
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('Builder previews multi-component SBOL3 and exposes graph download',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  await page.locator('.tab[data-tool="builder"]').click();
+  await page.locator('#photonSbol3BuilderV26').waitFor();
+  await page.getByRole('button',{name:'Preview SBOL 3 assembly'}).click();
+  await page.getByText('Design: PhotonAssembly', {exact:false}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Export SBOL 3 N-Triples'}).isVisible(),true);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
