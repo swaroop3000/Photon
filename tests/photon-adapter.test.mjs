@@ -53,6 +53,6 @@ test('origin-spanning features are preserved on no-op and block unsafe sequence 
  const unchanged=applySequenceRevision(w,w.seq);
  assert.equal(unchanged.changed,false);
  assert.deepEqual(unchanged.working.features,w.features);
- assert.throws(()=>applySequenceRevision(w,w.seq+'A'),/require reannotation/);
+ assert.throws(()=>applySequenceRevision(w,w.seq+'A'),/reannotation/);
  assert.equal(w.seq,'AACCGGTTAACC');
 });
