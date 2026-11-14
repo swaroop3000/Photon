@@ -108,3 +108,33 @@ test('sequential edits and undo do not mutate previous commit snapshots',()=>{
  assert.equal(h.redo().seq,original.seq+'C');
  assert.deepEqual(original,snapshot);
 });
+
+test('disjoint substitutions preserve annotation between edits',()=>{
+ const w={name:'two loci',topology:'linear',seq:'AACCGGTTAACC',
+  features:[{name:'between',start:5,end:8,type:'promoter'},
+            {name:'first',start:2,end:2,type:'misc'},
+            {name:'last',start:11,end:11,type:'misc'}]};
+ const r=applySequenceRevision(w,'ATCCGGTTAATC');
+ assert.deepEqual(r.working.features.map(f=>[f.start,f.end]),[[5,8],[2,2],[11,11]]);
+ assert.deepEqual(r.affectedFeatures,['first','last']);
+ assert.equal(w.seq,'AACCGGTTAACC');
+});
+test('independent safe changes in wrapped circular gap preserve origin-crossing feature',()=>{
+ const w={name:'circle',topology:'circular',seq:'AACCGGTTAACC',
+   features:[{name:'origin',start:10,end:3,type:'CDS',strand:-1},
+             {name:'middle',start:6,end:7,type:'misc'}]};
+ const r=applySequenceRevision(w,'AACCTGATAACC');
+ assert.deepEqual(r.working.features.map(f=>[f.start,f.end]),[[10,3],[6,7]]);
+ assert.deepEqual(r.affectedFeatures,['middle']);
+ const h=createEditorHistory(w);
+ h.apply('AACCTGATAACC');
+ assert.deepEqual(h.undo(),w);
+ assert.equal(h.redo().seq,'AACCTGATAACC');
+});
+test('circular edit rejects deletion of an ordinary annotation inside wrapped gap',()=>{
+ const w={name:'circle',topology:'circular',seq:'AACCGGTTAACC',
+   features:[{name:'origin',start:10,end:3,type:'CDS'},
+             {name:'gap-cds',start:5,end:6,type:'CDS'}]};
+ assert.throws(()=>applySequenceRevision(w,'AACCTTAACC'),/erase an annotation/);
+ assert.equal(w.seq,'AACCGGTTAACC');
+});
