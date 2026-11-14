@@ -13,7 +13,7 @@ function assertLegacyFeature(f, length) {
 }
 function cloneState(w) {
   if (!w || !Array.isArray(w.features)) throw new TypeError('Expected a Photon working construct');
-  return { ...w, features: w.features.map(f => ({ ...f })) };
+  return structuredClone(w);
 }
 function boundsForReplacement(oldSeq, newSeq) {
   let left = 0;
