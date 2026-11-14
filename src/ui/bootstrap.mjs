@@ -3,6 +3,7 @@ import {createProjectStorage} from '../core/project-storage.mjs';
 const storage={getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)};
 globalThis.PhotonInitializeStorage(createProjectStorage(storage));
 const modules=[
+  'recovery-tools.mjs',
   'editor-bridge.mjs',
   'plasmid-tools.mjs',
   'restriction-overlay.mjs',

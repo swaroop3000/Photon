@@ -2,6 +2,25 @@
 
 ## Takeover milestones (latest session)
 
+### Extended-session follow-up: recovery vault and migration staging
+
+- Started at `3439858`. Added `project-archive.mjs`, `recovery-vault.mjs` and
+  `recovery-tools.mjs`. The Recovery control copies exact main-project and known
+  part/backbone-library source strings into a version-1 IndexedDB archive with
+  entry hashing and read-back verification. No source keys are deleted/replaced.
+- Failed saves now attempt a persistent IndexedDB recovery copy; success is
+  reported only after the catalog/payload transaction commits. Reopened sessions
+  offer saved attempts for download, without silently applying them. Explicit
+  validated project restore remains the application path.
+- Real-browser tests cover restart, aborted writes, concurrent capacity limits,
+  future schema and checksum failure, and denied IndexedDB. Older copies are never
+  automatically deleted at capacity; explicit per-copy deletion is confirmed.
+- This is migration staging, **not the active IndexedDB backend cutover**. The UI
+  still expects synchronous project saves. An asynchronous command layer and an
+  atomic library/project cutover remain necessary before changing the active backend.
+- Local tests: 241 core tests and 51 browser tests; see the vault verification
+  report. The separate release review continues; no production promotion or merge.
+
 ### Follow-up: storage reliability
 
 - Continue from `723cbdb0`. Main project saves now go through `project-storage.mjs`:

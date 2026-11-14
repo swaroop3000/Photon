@@ -131,7 +131,7 @@ function load(){const result=projectStorage.open({create:()=>{seed();return DB;}
 function migrate(r){r.pulls=r.pulls||[];r.issues=r.issues||[];r.tags=r.tags||[];r.wiki=r.wiki||[{title:'Home',body:'Welcome to the '+r.name+' wiki.'}];if(r.protected===undefined)r.protected=false;r.pulls.forEach(p=>{p.reviews=p.reviews||[];});r.issues.forEach(i=>{i.comments=i.comments||[];i.labels=i.labels||[];});}
 function save(){
  try{if(!projectStorage){const error=new Error('Project storage is unavailable');error.name='ProjectStorageError';throw error;}const result=projectStorage.save(DB);showStorageStatus();return result;}
- catch(error){if(projectStorage)DB=projectStorage.rollback();showStorageStatus(error);queueMicrotask(()=>render());throw error;}
+ catch(error){if(projectStorage)DB=projectStorage.rollback();showStorageStatus(error);window.PhotonRecovery?.capture(projectStorage?.status);queueMicrotask(()=>render());throw error;}
 }
 function showStorageStatus(error){
  const status=projectStorage?.status;
@@ -153,7 +153,7 @@ function showStorageStatus(error){
 }
 window.addEventListener('error',event=>{if(event.error?.name==='ProjectStorageError'){event.preventDefault();flash(event.error.message);}});
 window.addEventListener('unhandledrejection',event=>{if(event.reason?.name==='ProjectStorageError'){event.preventDefault();flash(event.reason.message);}});
-window.addEventListener('beforeunload',event=>{if(projectStorage?.status.issue&&projectStorage.status.recoveryKind==='unsaved'){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(projectStorage?.status.issue&&projectStorage.status.recoveryKind==='unsaved'&&!window.PhotonRecovery?.isPersisted(projectStorage.status)){event.preventDefault();event.returnValue='';}});
 const uid=()=>Math.random().toString(36).slice(2,9);
 function snap(w){return{name:w.name,seq:w.seq,topology:w.topology,features:JSON.parse(JSON.stringify(w.features))};}
 function seed(){const s=SAMPLE();autoAnn(s);annORFs(s);const rid=uid(),cid=uid();DB={repos:{},cur:rid,tab:'code'};DB.repos[rid]={id:rid,name:s.name,desc:'Demo plasmid.',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Initial import',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+s.name+'\n\nOpen, versioned DNA design. Edit → commit → branch → PR → merge.'}],readme:'# '+s.name+'\n\nAn open, versioned DNA design. Every change is tracked like Git.'};}
@@ -667,7 +667,7 @@ window.PhotonEditorBridgeHost={
    projectStorage.save(next,{restore:true});
    DB=next;U.sel=-1;showStorageStatus();render();
    flash('Restored '+Object.keys(DB.repos).length+' local Photon projects.');
-  }catch(error){if(error.name==='ProjectStorageError')showStorageStatus();flash('Backup restore rejected: '+error.message);}
+  }catch(error){if(error.name==='ProjectStorageError'){showStorageStatus();window.PhotonRecovery?.capture(projectStorage?.status);}flash('Backup restore rejected: '+error.message);}
  };
  top.insertBefore(restore,document.getElementById('btnCommit'));
  top.insertBefore(backup,restore);
@@ -681,6 +681,7 @@ document.addEventListener('click',event=>{
  flash('Safe DNA editor unavailable. Run Photon using a local HTTP server (python -m http.server 8765) or the hosted site.');
 },true);
 document.body.inert=true;
+window.PhotonRecoveryHost={status:()=>projectStorage?.status,download:(name,text)=>download(name,text),message:message=>flash(message)};
 window.PhotonInitializeStorage=store=>{
  projectStorage=store;load();render();showStorageStatus();
  document.body.inert=false;
