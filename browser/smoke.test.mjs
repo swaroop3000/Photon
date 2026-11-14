@@ -116,3 +116,35 @@ test('circular feature creation, editing, and GenBank roundtrip preserve origin 
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('safe edit inside circular annotation gap preserves wrapped feature and undo',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.topology='circular';
+   w.seq='AACCGGTTAACC';
+   w.features=[{name:'wrap',start:10,end:3,strand:1,type:'CDS'}];
+   host.render();
+  });
+  await page.locator('#se').fill('AACCGGGGTTAACC');
+  await page.locator('#ap').click();
+  let state=await page.evaluate(()=>({
+    seq:window.PhotonEditorBridgeHost.working().seq,
+    f:window.PhotonEditorBridgeHost.working().features[0]
+  }));
+  assert.equal(state.seq,'AACCGGGGTTAACC');
+  assert.deepEqual([state.f.start,state.f.end],[12,3]);
+  await page.locator('#ub').click();
+  state=await page.evaluate(()=>({
+    seq:window.PhotonEditorBridgeHost.working().seq,
+    f:window.PhotonEditorBridgeHost.working().features[0]
+  }));
+  assert.equal(state.seq,'AACCGGTTAACC');
+  assert.deepEqual([state.f.start,state.f.end],[10,3]);
+ }finally{await browser.close();}
+});
