@@ -10,8 +10,8 @@ test('reports both oriented circular junctions and no imaginary sites',()=>{
  assert.deepEqual(result.junctionSpanningSites,[]);
 });
 test('detects EcoRI recognition created at insertion junction',()=>{
- // Backbone AATTCG, insert G; at boundary 0 gives GAATTC at junction 0.
- const r=inspectCircularInsertion('AATTCG','G',0,{enzymes:['EcoRI'],flank:3});
+ // Backbone AATTC, insert G; at boundary 0 gives GAATTC at junction 0.
+ const r=inspectCircularInsertion('AATTC','G',0,{enzymes:['EcoRI'],flank:3});
  assert.equal(r.siteCountsBefore.EcoRI,0);
  assert.ok(r.junctionSpanningSites.some(x=>x.enzyme==='EcoRI'));
  assert.ok(r.warnings.some(x=>/recognition site/.test(x)));
