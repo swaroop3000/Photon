@@ -4,6 +4,16 @@
 
 ### Extended-session follow-up: recovery vault and migration staging
 
+- Additional scientific regression: core `findMotif` previously missed `N` vs `R`
+  and `R` vs `M`. It now uses possible-base-set intersection, preserving the
+  existing intended possible-match behavior for ambiguous sequences. Biopython
+  cross-check covers all 225 code pairs and 3,375 ambiguous codons. Its B/Z/J
+  aliases are explicitly normalized to Photon's documented mixed-residue X policy
+  for 15 codons; report records this scope. GenBank and legacy literal-search
+  support are unchanged. See `reports/2026-11-14/AMBIGUITY-VALIDATION.md`.
+  Combined checks now pass 242 core tests, 54 browser tests, build and 3,669
+  Biopython assertions. Separate 100 kb/1 Mb/10 Mb diagnostics completed.
+
 - Release review follow-up fixes imported strings rendered in four HTML sinks
   (feature legend, inspector, validation warnings and tag badges). Malicious
   feature/tag backup regressions failed before fixes; three import/display cases

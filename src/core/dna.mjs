@@ -4,6 +4,8 @@
  * No DOM, network, browser storage, or mutation of caller-owned objects.
  */
 export const IUPAC = Object.freeze({ A:'A', C:'C', G:'G', T:'T', R:'AG', Y:'CT', S:'GC', W:'AT', K:'GT', M:'AC', B:'CGT', D:'AGT', H:'ACT', V:'ACG', N:'ACGT' });
+const IUPAC_MASKS=Object.freeze(Object.fromEntries(Object.entries(IUPAC).map(([code,bases])=>
+  [code,[...bases].reduce((bits,base)=>bits|(1<<'ACGT'.indexOf(base)),0)])));
 const COMPLEMENT = Object.freeze({A:'T', C:'G', G:'C', T:'A', R:'Y', Y:'R', S:'S', W:'W', K:'M', M:'K', B:'V', D:'H', H:'D', V:'B', N:'N'});
 const CODONS = 'TTT:F TTC:F TTA:L TTG:L TCT:S TCC:S TCA:S TCG:S TAT:Y TAC:Y TAA:* TAG:* TGT:C TGC:C TGA:* TGG:W CTT:L CTC:L CTA:L CTG:L CCT:P CCC:P CCA:P CCG:P CAT:H CAC:H CAA:Q CAG:Q CGT:R CGC:R CGA:R CGG:R ATT:I ATC:I ATA:I ATG:M ACT:T ACC:T ACA:T ACG:T AAT:N AAC:N AAA:K AAG:K AGT:S AGC:S AGA:R AGG:R GTT:V GTC:V GTA:V GTG:V GCT:A GCC:A GCA:A GCG:A GAT:D GAC:D GAA:E GAG:E GGT:G GGC:G GGA:G GGG:G'.split(' ').map(x=>x.split(':'));
 export const STANDARD_GENETIC_CODE = Object.freeze(Object.fromEntries(CODONS));
@@ -30,7 +32,10 @@ export function translate(seq,{frame=0,stopAtStop=false,partial='ignore'}={}){
     if(stopAtStop&&aa==='*')break;protein+=aa;
   }return protein;
 }
-/** Restriction/motif search on either strand, using IUPAC in the motif. Coordinates are 0-based. */
+/** Motif search on either strand. IUPAC codes in sequence and motif match when
+ * their possible base sets intersect. Hits are possible matches, not proof of
+ * an exact sequence or enzyme binding. Coordinates are 0-based.
+ */
 export function findMotif(sequence,motif,{circular=false,bothStrands=false}={}){
   const seq=normalizeDNA(sequence), pattern=normalizeDNA(motif);if(!pattern.length)throw new RangeError('Motif must be nonempty');
   const n=seq.length;if(!n)return [];
@@ -39,7 +44,7 @@ export function findMotif(sequence,motif,{circular=false,bothStrands=false}={}){
   const patterns=[{p:pattern,strand:1}];const rc=reverseComplement(pattern);
   if(bothStrands&&rc!==pattern)patterns.push({p:rc,strand:-1});
   const hits=[];for(let i=0;i<limit;i++)for(const {p,strand} of patterns){
-    let match=true;for(let j=0;j<p.length;j++){const base=seq[(i+j)%n];if(!IUPAC[p[j]].includes(base)&&!IUPAC[base].includes(p[j])){match=false;break;}}
+    let match=true;for(let j=0;j<p.length;j++){const base=seq[(i+j)%n];if(!(IUPAC_MASKS[p[j]]&IUPAC_MASKS[base])){match=false;break;}}
     if(match)hits.push({start:i,end:i+p.length,strand});
   }return hits;
 }

@@ -6,6 +6,7 @@ No network requests, user sequence uploads, or claims about laboratory outcomes.
 """
 import hashlib
 import io
+import itertools
 import json
 from pathlib import Path
 import random
@@ -18,6 +19,7 @@ from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation, CompoundLocation
 from Bio.SeqRecord import SeqRecord
 from Bio import BiopythonParserWarning
+from Bio.Data import IUPACData
 
 warnings.simplefilter('error', BiopythonParserWarning)
 
@@ -52,7 +54,11 @@ for circular in [False, True]:
 # overlap assembly, not Gibson reaction kinetics or Gateway recombination.
 target = sequence[:400]
 fragments = [target[:160], target[140:280], target[260:]]
-payload = {'genbank': texts, 'sequence': sequence, 'assembly': {'fragments': fragments}}
+codes = 'ACGTRYSWKMBDHVN'
+pairs = list(itertools.product(codes, repeat=2))
+codons = [''.join(bases) for bases in itertools.product(codes, repeat=3)]
+payload = {'genbank': texts, 'sequence': sequence, 'assembly': {'fragments': fragments},
+           'ambiguityCodes': codes, 'motifPairs': pairs, 'ambiguousCodons': codons}
 run = subprocess.run(['node', 'tests/check-biopython.mjs'], cwd=root, input=json.dumps(payload),
                      text=True, capture_output=True, check=True)
 result = json.loads(run.stdout)
@@ -61,6 +67,23 @@ assert result['protein'] == str(Seq(sequence[:len(sequence)//3*3]).translate())
 assert result['assembly']['sequence'] == target
 assert [j['overlap'] for j in result['assembly']['junctions']] == [20, 20]
 checks = 4
+assert result['ambiguousReverse'] == str(Seq(codes).reverse_complement())
+checks += 1
+for (base, pattern), hit in zip(pairs, result['motifPairs'], strict=True):
+    possible = bool(set(IUPACData.ambiguous_dna_values[base]) & set(IUPACData.ambiguous_dna_values[pattern]))
+    assert hit == possible, (base, pattern, hit, possible)
+    checks += 1
+alias_codons = 0
+for codon, protein in zip(codons, result['ambiguousProteins'], strict=True):
+    reference = str(Seq(codon).translate())
+    # Photon explicitly returns X whenever alternatives encode mixed residues.
+    # Biopython can encode mixed N/D, Q/E or I/L as B, Z or J respectively.
+    # Normalize those documented amino-acid aliases, not genuine disagreements.
+    if reference in {'B', 'Z', 'J'}:
+        alias_codons += 1
+    expected = 'X' if reference in {'B', 'Z', 'J'} else reference
+    assert protein == expected, (codon, protein, reference, expected)
+    checks += 1
 for original, returned in zip(records, result['records'], strict=True):
     exported = SeqIO.read(io.StringIO(returned['exported']), 'genbank')
     assert str(exported.seq) == str(original.seq)
@@ -87,4 +110,7 @@ for name in names:
 print(json.dumps({'schema': 'photon-biopython-validation-v1', 'biopython': Bio.__version__,
                   'fixture_sha256': hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(),
                   'seed': 3000, 'records': len(records), 'enzymes': len(names), 'assertions': checks,
+                  'ambiguity_pairs': len(pairs), 'ambiguous_codons': len(codons),
+                  'mixed_residue_alias_codons': alias_codons,
+                  'amino_acid_policy': 'Biopython B/Z/J become Photon X for mixed-residue outcomes',
                   'scope': 'Synthetic supported-subset differential checks; no wet-lab validation'}, indent=2))

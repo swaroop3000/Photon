@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeDNA,reverseComplement,gcContent,translate,findMotif,editSequence,parseFASTA,toFASTA} from '../src/core/dna.mjs';
 
+test('IUPAC sequence and motif ambiguity match by possible-base intersection',()=>{
+ for(const [sequence,motif] of [['N','R'],['R','M'],['RY','MW']])
+  assert.deepEqual(findMotif(sequence,motif),[{start:0,end:motif.length,strand:1}]);
+ for(const [sequence,motif] of [['R','Y'],['Y','R'],['A','C']])assert.deepEqual(findMotif(sequence,motif),[]);
+ assert.deepEqual(findMotif('R','M',{bothStrands:true}),[
+  {start:0,end:1,strand:1},{start:0,end:1,strand:-1}]);
+ assert.equal(translate('RAC'),'X','mixed N/D outcomes retain the documented X policy');
+});
+
 test('normalize DNA and reject invalid bases with location',()=>{
   assert.equal(normalizeDNA(' a c\ngt '),'ACGT');assert.equal(normalizeDNA('aug',{allowRNA:true}),'ATG');
   assert.throws(()=>normalizeDNA('ACU'),/position 2/);assert.throws(()=>normalizeDNA('ACGN',{allowAmbiguous:false}),/position 3/);

@@ -51,6 +51,7 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 ## 5. Scientific validation and release
 - [x] Node unit tests and browser smoke tests in CI.
 - [x] Small independent standard-code and restriction-site vectors.
+- [x] Fix modular IUPAC motif matching when both sequence and pattern are ambiguous; match by possible-base intersection. Differential-check all 225 supported code pairs and 3,375 ambiguous codons against Biopython, with explicit B/Z/J → Photon X mixed-residue policy (15 codons). No enzyme-binding, full INSDC or legacy search-widget claim is added.
 - [x] Add pinned Biopython CI differential checks (68 assertions on deterministic synthetic inputs); keep version, seed, fixture digest and scope in the machine-readable report. Broad scientific certification remains open.
 - [ ] External reproducibility assessment, peer technical review, formal risk assessment and reference accuracy thresholds.
 - [x] Add minimal static release output, a Wrangler configuration for the 'photon' Worker, deployment guide and static-build CI.
@@ -81,3 +82,8 @@ Extended-session follow-up: 241 core and 54 browser tests passed, including real
 IndexedDB atomicity/restart/retention and imported-markup safety cases. Static build,
 60-asset clean Wrangler dry run and built-distribution edit/undo/archive smoke passed.
 See `reports/2026-11-14/EXTENDED-SESSION.md`; these are bounded software checks.
+
+IUPAC follow-up: 242 core / 54 browser tests, build and 3,669 Biopython assertions
+passed, including 225 code pairs and 3,375 codon patterns with the documented
+mixed-residue alphabet policy. Updated diagnostic matrix is recorded alongside
+`AMBIGUITY-VALIDATION.md`. Real-record and laboratory acceptance remain open.

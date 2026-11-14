@@ -21,6 +21,18 @@ console.log(translate('ATGGCTTAA')); // MA*
 
 Coordinates are zero-based and half-open. Strand is +1 or -1. DNA input is validated; `normalizeDNA` may optionally convert RNA U to DNA T. Ambiguous-base GC content counts only unambiguous A/C/G/T positions. Edits affecting feature interiors flag `affected: true` for manual review. These policies are not a complete annotation liftover model.
 
+Core `findMotif` uses **possible-base intersection** for IUPAC codes in both the
+sequence and motif: `N` can match `R`, and `R` can match `M` through their common
+possible base A. A hit does not prove an exact sequence or enzyme binding. The
+legacy browser literal-search widget is a separate implementation; this core
+policy does not broaden that widget or GenBank's accepted DNA alphabet.
+
+Translation resolves an ambiguous codon only when every possible codon gives the
+same residue; mixed residues return `X`. Biopython's mixed-residue aliases B, Z
+and J are normalized to X in the independent comparison, explicitly recorded in
+the report. All 225 supported ambiguity-code pairs and 3,375 ambiguous codons are
+cross-checked with pinned Biopython in `scripts/validate-biopython.py`.
+
 ## Scope limits
 
 This is a scientific *foundation*, not a certified clinical engine. The motif finder does not model cut offsets, methylation, star activity, or ambiguous-site probabilities. Translation uses the standard nuclear genetic code, not mitochondrial or organism-specific codes.
