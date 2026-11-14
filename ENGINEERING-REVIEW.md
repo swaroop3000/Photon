@@ -16,6 +16,7 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Deterministic tests for EcoRI/PstI cut offsets, restriction-ligation and Golden Gate overhang junctions.
 - [x] Add fixed additional BamHI, HindIII, EcoRV, SmaI and NotI recognition/cut/ligation reference regression vectors.
 - [ ] Verify the full curated enzyme registry against an authoritative reference, including orientation and ambiguous bases.
+- [x] Differential-check all seven core registry definitions, linear cut positions and overhang type/length against Biopython 1.86; check ordered prepared-fragment overlap assembly against a known synthetic target. This does not validate Gateway, enzyme chemistry, methylation or yields.
 - [ ] Test Gibson and Gateway against independently prepared sequence fixtures.
 - [ ] Chemistry-dependent assumptions (methylation, star activity, efficiency and yield) require a separate scope: simulator does not model them.
 
@@ -28,6 +29,8 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Validate v1 backup project maps, working/historic DNA snapshots, annotation intervals, branch heads, parent references and acyclic history, tags, issues, reviews and wiki before replacement; preserve nested extension metadata. Unit regressions include a 12,000-commit DAG; Chromium covers corruption before confirmation, cancellation, quota failure, and reload persistence. No existing live-storage migration is performed.
 - [ ] Extend collection import beyond the supported subset and provide complete provenance review and storage-quota migration.
 - [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
+- [x] Support wrapped quoted prose/translation and doubled-quote escapes, reject unterminated/repeated qualifiers and duplicate label export, preserve quoted feature names. Fix LOCUS fixed-column fields so independent readers retain topology. General compound joins, repeated/valueless qualifiers and translation-table interpretation remain open.
+- [x] Generate two synthetic GenBank records independently with Biopython 1.86 and cross-check round-trip locations, topology, qualifiers and extracted feature sequences (including reverse origin-spanning features); parser warnings fail the check. This does not satisfy the real-record dataset item below.
 - [ ] Interoperability fixtures from independently validated real records and cross-checks with Biopython / INSDC tools.
 
 ## 4. Performance
@@ -35,12 +38,14 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] 200 kb deterministic regression.
 - [x] `node scripts/benchmark-core.mjs 1000000` measures time per operation and heap usage; no environmental assertion or performance guarantee.
 - [x] Add a manual, isolated-process 100 kb / 1 Mb / 10 Mb profiling matrix (not a CI speed requirement).
+- [x] Build non-wrapped explicit edit batches by concatenating unchanged segments once, avoiding full-sequence normalization/copy per edit. Preserve sequential annotation policy in 300 deterministic differential cases and a 10 Mb/1,000-edit metadata regression. Annotation mapping remains O(features × edits), wrapped edits retain the conservative path, and the browser editor is not virtualized.
 - [ ] Multiple hardware/browser datasets, memory budgets, storage quotas and whole-genome workflows.
 - [ ] Virtualized editor and streaming file import for multi-megabase constructs.
 
 ## 5. Scientific validation and release
 - [x] Node unit tests and browser smoke tests in CI.
 - [x] Small independent standard-code and restriction-site vectors.
+- [x] Add pinned Biopython CI differential checks (68 assertions on deterministic synthetic inputs); keep version, seed, fixture digest and scope in the machine-readable report. Broad scientific certification remains open.
 - [ ] External reproducibility assessment, peer technical review, formal risk assessment and reference accuracy thresholds.
 - [x] Add minimal static release output, a Wrangler configuration for the 'photon' Worker, deployment guide and static-build CI.
 - [ ] Confirm successful Cloudflare deployment in Cloudflare build logs (GitHub Actions CI is not a deployment check).

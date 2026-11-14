@@ -10,16 +10,28 @@ Photon's strict GenBank import supports:
 - 1-based, inclusive single-base and continuous interval features.
 - A reverse strand via `complement(...)`.
 - Circular-origin features via exactly two intervals `join(start..length,1..end)` (optionally wrapped in `complement`).
-- Single-line quoted qualifiers such as `gene`, `product`, `note`, `label`, `locus_tag`, and other simple, uniquely named string qualifiers.
+- Quoted qualifiers such as `gene`, `product`, `note`, `label`, `locus_tag`, and other uniquely named string qualifiers. Wrapped prose joins with spaces; wrapped `translation` values join without whitespace. Literal quotes use INSDC doubled quotes (`""`).
 - The `source` feature is read for source structure and deliberately omitted from the construct annotation list.
 
 Photon rejects ambiguous or unrepresentable cases rather than silently changing meaning:
 - Fuzzy positions (`<`/`>`), remote features, `order(...)`, non-origin `join(...)`, and other compound/multi-exon structures.
-- Repeated, valueless, or multi-line qualifiers; extra complex qualifier syntax.
+- Repeated or valueless qualifiers; extra complex qualifier syntax and unterminated quoted values.
 - Invalid sequence, incorrect declared length, and malformed annotations.
-- Multiple records in one file have not yet been supported or validated.
+- The single-record API rejects multiple LOCUS records. The collection API and reviewed browser import support multiple individually supported records (100 records, 1 Mb total, 500 kb per record, 20,000 features in the browser).
 
 Export writes the supported location/qualifier subset. It is not guaranteed to preserve all original GenBank headers, source metadata, quoted multiline formatting or remote feature relationships. Import is *atomic* in the file picker: rejected records leave the current construct unchanged. Imported GenBank annotations are not silently supplemented with auto-generated features.
+
+Export now writes fixed-column LOCUS length/topology fields. Its division and date
+are explicit placeholders (`UNK 01-JAN-1980`), not recovered source metadata. Feature
+names and qualifier quotes are preserved rather than truncated/replaced; newline
+values and duplicate `label` storage are rejected. Literal newline formatting is
+not represented in the normalized feature model.
+
+`python scripts/validate-biopython.py` with Biopython 1.86 independently generates
+and reads synthetic linear/circular records, checking reverse/wrapped locations,
+qualifiers, feature extraction and round trips. Parser warnings fail this check.
+These two records are regression evidence for the supported subset; diverse real
+records, full INSDC support and preservation of all headers remain outstanding.
 
 ## SBOL / Photon XML
 

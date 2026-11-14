@@ -96,15 +96,39 @@ test('external GenBank malformed ORIGIN and mismatched declared length fail',()=
  assert.throws(()=>parseGenbank(externalGenbank.replace('24 bp','25 bp')),/length differs/);
  assert.throws(()=>parseGenbank(externalGenbank.replace('aaccggttaacc','aacxggttaacc')),/Invalid DNA base/);
 });
-test('external GenBank multiline qualifiers are rejected rather than silently truncated',()=>{
+test('external GenBank multiline qualifiers preserve text and escaped quotes',()=>{
  const altered=externalGenbank.replace('/product="synthetic peptide"','/product="synthetic\n                     peptide"');
- assert.throws(()=>parseGenbank(altered),/Unsupported GenBank qualifier|Multiline/);
+ assert.equal(parseGenbank(altered).features[0].qualifiers.product,'synthetic peptide');
+ const quoted=altered.replace('/note="simple annotation"','/note="a ""quoted""\n                     annotation"');
+ const result=parseGenbank(quoted);
+ assert.equal(result.features[1].qualifiers.note,'a "quoted" annotation');
+ assert.deepEqual(parseGenbank(serializeGenbank(result)),result);
+ const translated=altered.replace('/product="synthetic\n                     peptide"',
+   '/translation="MA\n                     KL"');
+ assert.equal(parseGenbank(translated).features[0].qualifiers.translation,'MAKL');
+});
+test('malformed or repeated qualifiers remain fail-closed',()=>{
+ for(const bad of ['/note="unterminated','/note="bad" trailing','/note=unquoted',
+   '/note="first"\n                     /note="second"']){
+   assert.throws(()=>parseGenbank(externalGenbank.replace('/note="simple annotation"',bad)),
+     /qualifier|Unterminated/);
+ }
+ const modified={...w,features:[{...w.features[0],name:'a "quoted" feature',
+   qualifiers:{note:'a "quoted" note'}}]};
+ assert.deepEqual(parseGenbank(serializeGenbank(modified)).features,modified.features);
+ assert.throws(()=>serializeGenbank({...w,features:[{...w.features[0],qualifiers:{label:'duplicate'}}]}),
+   /qualifier/);
+});
+test('single record parser rejects a second LOCUS even with only one terminator',()=>{
+ assert.throws(()=>parseGenbank(externalGenbank.replace('FEATURES',
+   'LOCUS       SECOND                24 bp    DNA     circular\nFEATURES')),/one GenBank LOCUS/);
+ assert.throws(()=>parseGenbank('garbage\n'+externalGenbank),/one GenBank LOCUS/);
 });
 
 test('GenBank importer rejects multiple or unterminated records without silent data loss',()=>{
  const a=serializeGenbank({name:'a',topology:'linear',seq:'AACCGG',features:[]});
  const b=serializeGenbank({name:'b',topology:'linear',seq:'GGTACC',features:[]});
- assert.throws(()=>parseGenbank(a+b),/exactly one terminated/);
+ assert.throws(()=>parseGenbank(a+b),/exactly one/);
  assert.throws(()=>parseGenbank(a.replace(/\/\/\s*$/,'')),/exactly one terminated/);
  assert.throws(()=>parseGenbank(a+'trailing invalid data'),/exactly one terminated/);
  assert.equal(parseGenbank(a).seq,'AACCGG');
