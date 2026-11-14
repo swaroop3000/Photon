@@ -38,6 +38,7 @@ export function applySequenceRevision(working, proposedSequence) {
   });
   const prev = cloneState(working);
   if (before === after) return { working: prev, changed: false, affectedFeatures: [], edit: null };
+  if (working.features.some(f => f.start > f.end)) throw new RangeError('Sequence edits with origin-spanning features require reannotation; no bases were changed');
   const edit = boundsForReplacement(before, after);
   const result = editSequence(before, coreFeatures, edit);
   const features = result.features.map(f => {
