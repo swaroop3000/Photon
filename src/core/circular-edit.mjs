@@ -30,6 +30,8 @@ export function applyCircularGapEdit(working,edit){
  const ordinary=working.features.filter(f=>f.start<=f.end)
    .map(f=>({...f,start:f.start-1}));
  const updated=editSequence(seq,ordinary,{start,end,insert:inserted});
+ if(updated.features.some(f=>f.end<=f.start))
+   throw new RangeError('Edit would erase an annotation; remove or reannotate it explicitly');
  const nextOrdinary=updated.features.map(f=>{
    const {affected,...rest}=f;
    return {...rest,start:f.start+1,...(affected?{affected:true}:{})};
