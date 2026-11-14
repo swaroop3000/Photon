@@ -44,3 +44,11 @@ test('invalid coordinates and topology are refused',()=>{
  assert.throws(()=>applyCircularGapEdit(w,{start:-1,end:2,insert:'A'}),/Invalid edit/);
  assert.throws(()=>applyCircularGapEdit(w,{start:5,end:5,insert:'N?'}),/Invalid DNA base/);
 });
+
+test('gap edit cannot silently erase an ordinary annotation',()=>{
+ const w=original();
+ w.features.push({name:'gap-feature',start:5,end:6,strand:1,type:'misc'});
+ assert.throws(()=>applyCircularGapEdit(w,{start:4,end:6,insert:''}),/erase an annotation/);
+ assert.equal(w.features.length,2);
+ assert.equal(w.seq,'AACCGGTTAACC');
+});
