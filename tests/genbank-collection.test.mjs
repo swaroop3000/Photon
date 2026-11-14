@@ -18,7 +18,10 @@ test('CRLF files and optional whitespace between records are supported',()=>{
 });
 test('invalid second record aborts entire collection parse',()=>{
  const s=serializeGenbankCollection(constructs);
- assert.throws(()=>parseGenbankCollection(s.replace('ACCGGTTAACC','ACCGGTTAAXC')),/Invalid DNA base/);
+ const records=splitGenbankRecords(s);
+ const corrupted=records[1].replace(/(ORIGIN[^\\n]*\\n\\s*1\\s+)a/i,'$1x');
+ assert.notEqual(corrupted,records[1],'fixture corruption must actually change the ORIGIN text');
+ assert.throws(()=>parseGenbankCollection(records[0]+corrupted),/Invalid DNA base/);
 });
 test('unterminated, concatenated LOCUS, stray text and record limits are rejected',()=>{
  const text=serializeGenbankCollection(constructs);
