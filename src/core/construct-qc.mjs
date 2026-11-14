@@ -34,6 +34,17 @@ function tandemRepeats(seq,{circular,minUnits,maxMotif,limit}){
      // once at its earliest coordinate in an explicitly bounded scan.
      if(!circular&&i+unit*minUnits>n)break;
      const motif=Array.from({length:unit},(_,j)=>seq[(i+j)%n]).join('');
+     // Skip later starts within the same repeated tract BEFORE counting.
+     // Otherwise homopolymers can trigger O(n²) work on long plasmids.
+     if(i>=unit||circular){
+       if(!(circular&&i===0)){
+         let isContinuation=true;
+         for(let j=0;j<unit;j++){
+           if(seq[(i-unit+j+n)%n]!==motif[j]){isContinuation=false;break;}
+         }
+         if(isContinuation)continue;
+       }
+     }
      let copies=1;
      while(copies<Math.floor(n/unit)){
        if(!circular&&i+(copies+1)*unit>n)break;
@@ -47,10 +58,6 @@ function tandemRepeats(seq,{circular,minUnits,maxMotif,limit}){
      }
      if(copies>=minUnits){
        const span=copies*unit;
-       // Avoid the same run being emitted once for every motif phase.
-       const predecessor=Array.from({length:unit},(_,j)=>seq[(i-unit+j+n*2)%n]).join('');
-       if((circular||i>=unit)&&predecessor===motif&&
-          (circular||i-unit>=0))continue;
        out.push({start:i+1,end:((i+span-1)%n)+1,unit,motif,copies,length:span,
          wrapsOrigin:i+span>n});
        if(out.length>=limit)return {items:out,truncated:true};
