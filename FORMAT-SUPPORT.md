@@ -93,3 +93,14 @@ The review compares original and replacement construct lengths and annotation co
 This is a **working construct replacement**, *not* a Git commit. Users must explicitly select the existing **Commit** command to create a versioned repository snapshot; the operation never automatically commits or merges.
 
 **Important limitations:** Converted assemblies are linear; no plasmid backbone is automatically added, no circularization is inferred, and no laboratory assembly or restriction-site success is predicted. Existing features are replaced with component-placement annotations rather than automatically transferred. Although feature names, orientations, and source paths are retained, specialized feature ontology classes are not inferred from part names.
+
+
+## Photon 3.0 — Circular backbone insertion with annotation preservation
+
+The Builder includes a second, **explicitly reviewed** application mode for circular plasmids. It uses the **current circular working construct** as the backbone and inserts the selected validated linear circuit at a user-supplied **0-based interbase boundary** (0 through backbone length). The resulting working construct stays circular.
+
+The coordinate-liftover engine preserves existing backbone features, including their names, types, strand orientations, and qualifiers. Features entirely downstream of the insertion shift by the inserted sequence length; annotated origin-spanning features retain their wrapped relationship if insertion lies in their unannotated gap. Each inserted circuit leaf becomes a 1-based inclusive strand-aware `misc_feature` annotation with source-path provenance. Insertion boundaries that split *any* backbone annotation are rejected, including circular origin junctions inside wrapped annotations. Insertion cannot exceed a 1,000,000 bp combined sequence length.
+
+**Safety:** This path is separate from the prior linear circuit replacement. Review compares backbone, inserted circuit, annotation counts, insertion boundary and resultant length. Users must check an acknowledgement before applying. If the source circuit, insertion boundary, repository/branch or working construct changes, the reviewed operation must be reviewed again. Application participates in the full-construct Undo/Redo history; it does **not** automatically create a repository commit.
+
+**Scientific scope:** This is an **in-silico concatenation only**. No enzymatic cut sites, ligation junction chemistry, backbone linearization reaction, overlaps, origin compatibility, selectable-marker function, reading frame, expression, sequencing verification or laboratory success are established. The initial backbone source is the current circular working plasmid; choosing a different backbone requires importing or switching the working construct first. The separate GenBank subset can round-trip the resulting construct for supported features; broader standards compatibility is not implied.
