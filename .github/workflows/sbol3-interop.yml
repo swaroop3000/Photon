@@ -63,3 +63,23 @@ jobs:
           print('Multi-component SBOL3 validation:', report)
           assert len(report.errors) == 0, 'Invalid SubComponent graph'
           PY
+      - name: Generate nested reusable component hierarchy RDF
+        run: node tests/emit-sbol3-hierarchy.mjs > /tmp/photon-hierarchy.nt
+      - name: Independently validate nested SBOL3 hierarchy
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-hierarchy.nt', encoding='utf-8') as f:
+              doc.read_string(f.read(), sbol3.NTRIPLES)
+          root = doc.find('https://photon.app/sbol3/circuit')
+          cassette = doc.find('https://photon.app/sbol3/cassette')
+          assert root is not None and cassette is not None
+          assert len(root.features) == 3
+          assert len(cassette.features) == 2
+          assert all(isinstance(p, sbol3.SubComponent) for p in root.features)
+          assert sum(p.instance_of=='https://photon.app/sbol3/cassette' for p in root.features)==2
+          report = doc.validate()
+          print('Nested hierarchy validation:',report)
+          assert len(report.errors)==0
+          PY
