@@ -1,0 +1,24 @@
+name: Photon static build
+on:
+  push:
+    branches: [feature/photon-1-core-engine]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  static-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build
+      - name: Validate browser assets and exclude development files
+        run: |
+          test -s dist/index.html
+          test -s dist/src/ui/editor-bridge.mjs
+          test -s dist/src/core/dna.mjs
+          test ! -e dist/tests
+          test ! -e dist/.git
+          test ! -e dist/ENGINEERING-REVIEW.md
