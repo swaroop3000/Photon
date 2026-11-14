@@ -502,12 +502,13 @@ if((text.match(/^LOCUS\s/gm)||[]).length>1){
  try{
   if(!window.PhotonFeatureIO?.parseCollection)throw new Error('GenBank collection codec unavailable. Serve Photon over HTTP.');
   records=window.PhotonFeatureIO.parseCollection(text,{maxRecords:100});
+  window.PhotonFeatureIO.preflightCollection(records);
  }catch(error){
   modal('<h2 class="ph">Collection import rejected</h2><div class="sub">'+esc(error.message)+'</div><button class="btn" onclick="closeModal()">Close</button>');
   e.target.value='';return;
  }
- const totalBp=records.reduce((sum,r)=>sum+r.seq.length,0);
- const featureCount=records.reduce((sum,r)=>sum+r.features.length,0);
+ const preflight=window.PhotonFeatureIO.preflightCollection(records);
+ const totalBp=preflight.totalBases,featureCount=preflight.totalFeatures;
  modal('<h2 class="ph">GenBank collection import</h2><div class="sub">All records passed the supported GenBank subset parser. Import each as a separate local repository; nothing will be merged into the current construct.</div><div class="li">'+records.length+' records · '+totalBp+' bp · '+featureCount+' feature(s)</div><div class="li" style="color:var(--partial)">Unsupported INSDC grammar is rejected. Imported repositories are local browser data, not GitHub repositories; back them up with Photon JSON exports.</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="impCollection">Create '+records.length+' repositories</button><button class="btn" onclick="closeModal()">Cancel</button></div>');
  document.getElementById('impCollection').onclick=()=>{
   const previous=DB.cur,created=[];
