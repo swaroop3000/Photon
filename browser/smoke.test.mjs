@@ -291,3 +291,32 @@ test('reusable library previews nested DNA graph, persists, and rejects cycles',
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('visual circuit designer inserts, reverses, moves, removes without editing DNA',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+   const page=await browser.newPage();
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+   await page.locator('.tab[data-tool="builder"]').click();
+   const visual=page.locator('#photonCircuitVisualV28');
+   await visual.waitFor();
+   const cards=visual.locator('#photonCircuitTrack > div');
+   assert.equal(await cards.count(),3);
+   await visual.locator('#photonCircuitPartPicker').selectOption('promoter');
+   await visual.getByRole('button',{name:'Insert component'}).click();
+   assert.equal(await cards.count(),4);
+   assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit cassette\+ terminator\+ cassette- promoter\+/);
+   await visual.getByRole('button',{name:'Reverse promoter'}).click();
+   assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/promoter-/);
+   await visual.getByRole('button',{name:'Move promoter left'}).click();
+   assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit cassette\+ terminator\+ promoter- cassette-/);
+   await visual.getByRole('button',{name:'Remove promoter'}).click();
+   assert.equal(await cards.count(),3);
+   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+   assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
