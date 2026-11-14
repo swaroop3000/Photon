@@ -207,7 +207,10 @@ document.addEventListener('click',closeDD);
 document.querySelectorAll('#expDD button').forEach(b=>b.onclick=()=>{const w=W(),f=b.dataset.f;if(f==='fasta')download(w.name+'.fasta',toFASTA(w));if(f==='genbank')download(w.name+'.gb',toGenBank(w));if(f==='sbol')download(w.name+'.sbol.xml',toSBOL(w));if(f==='native')download(w.name+'.photon.json',JSON.stringify({format:'photon/pro',repo:repo()},null,2));});
 document.getElementById('btnCommit').onclick=()=>{const m=prompt('Commit message:');if(m!==null)commit(m);};
 document.getElementById('btnReset').onclick=()=>{if(confirm('Reset all local data and reload the demo?')){localStorage.removeItem(KEY);load();render();}};
-document.getElementById('fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const d=detect(String(rd.result));if(d._bundle){importBundle(d._bundle);}else{const w=W();w.name=d.name;w.seq=d.seq;w.topology=d.topology;w.features=d.features;autoAnn(w);U.sel=-1;save();flash('Imported '+f.name);render();}};rd.readAsText(f);e.target.value='';};
+document.getElementById('fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const raw=String(rd.result),d=detect(raw);if(d._bundle){importBundle(d._bundle);}else{const w=W();w.name=d.name;w.seq=d.seq;w.topology=d.topology;w.features=d.features;
+// Preserve explicit source annotations exactly; do not auto-annotate GenBank/SBOL.
+if(!/^\s*LOCUS\b/im.test(raw)&&!/<sbol\s*:\s*SBOL\b/i.test(raw))autoAnn(w);
+U.sel=-1;save();flash('Imported '+f.name);render();}}catch(error){flash('Import rejected: '+error.message);}};rd.onerror=()=>flash('Could not read import file');rd.readAsText(f);e.target.value='';};
 /* nav */
 const TABS=[['code','Code'],['commits','Commits'],['compare','Compare'],['branches','Branches'],['pulls','Pull Requests'],['issues','Issues'],['wiki','Wiki'],['insights','Insights'],['settings','Settings']];
 function renderNav(){const r=repo();document.getElementById('nav').innerHTML=TABS.map(([k,l])=>{let c='';if(k==='commits')c=Object.keys(r.commits).length;if(k==='branches')c=Object.keys(r.branches).length;if(k==='pulls')c=r.pulls.filter(p=>p.status==='open').length;if(k==='issues')c=r.issues.filter(i=>i.status==='open').length;return`<button class="navt ${DB.tab===k?'active':''}" data-t="${k}">${l}${c?`<span class="cnt">${c}</span>`:''}</button>`;}).join('');document.querySelectorAll('.navt').forEach(b=>b.onclick=()=>{DB.tab=b.dataset.t;save();render();});}
@@ -536,9 +539,8 @@ const _photonLegacyGenbankExport=toGenBank;
 toGenBank=function(w){return window.PhotonFeatureIO?.serialize?.(w)??_photonLegacyGenbankExport(w);};
 const _photonLegacyGenbankImport=parseGenBank;
 parseGenBank=function(source){
- if((/Exported from Photon \(limited GenBank subset\)/.test(source)||/\bjoin\s*\(/i.test(source))&&window.PhotonFeatureIO)
-   return window.PhotonFeatureIO.parse(source);
- return _photonLegacyGenbankImport(source);
+ if(!window.PhotonFeatureIO?.parse)throw new Error('Photon GenBank codec not loaded');
+ return window.PhotonFeatureIO.parse(source);
 };
 // Photon 2.3: versioned Photon XML roundtrip with explicit rejection of
 // unsupported external SBOL documents. The legacy formatter is not used for
