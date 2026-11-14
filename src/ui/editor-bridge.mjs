@@ -23,12 +23,12 @@ function update(w) {
   target.topology = w.topology;
   target.seq = w.seq;
   target.features = clone(w.features);
-  host.selectionReset();
   host.save();
+  host.selectionReset();
   host.render();
 }
 function perform(command, sequence) {
-  const old = host.working();
+  const old = clone(host.working());
   const h = history();
   if (command === 'apply') {
     if(h.signature!==null&&h.signature!==signature(old)){
@@ -36,11 +36,11 @@ function perform(command, sequence) {
     }
     const result = applySequenceRevision(old, sequence);
     if (!result.changed) { host.message('No sequence changes.'); return; }
+    update(result.working);
     h.past.push(clone(old));
     if (h.past.length > 50) h.past.shift();
     h.future.length = 0;
     h.signature = signature(result.working);
-    update(result.working);
     host.message(result.affectedFeatures.length
       ? 'Sequence applied; review '+result.affectedFeatures.length+' affected feature(s).'
       : 'Sequence applied.');
@@ -55,10 +55,11 @@ function perform(command, sequence) {
   const source = command === 'undo' ? h.past : h.future;
   const dest = command === 'undo' ? h.future : h.past;
   if (!source.length) { host.message('Nothing to '+command+'.'); return; }
-  dest.push(clone(old));
-  const next = source.pop();
-  h.signature = signature(next);
+  const next = source.at(-1);
   update(next);
+  dest.push(clone(old));
+  source.pop();
+  h.signature = signature(next);
   host.message(command === 'undo' ? 'Undid sequence edit.' : 'Redid sequence edit.');
 }
 // Capture phase overrides the old editor's click handlers without replacing its UI.
@@ -84,15 +85,15 @@ globalThis.PhotonEditorHistory={
   * One batch produces one undo entry and never creates a repository commit.
   */
  applyEdits(edits){
-   const old=host.working(),h=history();
+   const old=clone(host.working()),h=history();
    if(h.signature!==null&&h.signature!==signature(old)){
      h.past.length=0;h.future.length=0;h.signature=null;
    }
    const result=applyExplicitEdits(old,edits);
    if(!result.changed)return false;
+   update(result.working);
    h.past.push(clone(old));if(h.past.length>50)h.past.shift();
    h.future.length=0;h.signature=signature(result.working);
-   update(result.working);
    host.message('DNA batch applied; review affected features and commit separately.');
    return true;
  },
@@ -101,15 +102,15 @@ globalThis.PhotonEditorHistory={
       !['linear','circular'].includes(next.topology)||
       typeof next.name!=='string'||typeof next.seq!=='string')
      throw new TypeError('Invalid replacement construct');
-   const old=host.working(),h=history();
+   const old=clone(host.working()),h=history();
    if(h.signature!==null&&h.signature!==signature(old)){
      h.past.length=0;h.future.length=0;
    }
    if(signature(old)===signature(next))return false;
+   update(clone(next));
    h.past.push(clone(old));if(h.past.length>50)h.past.shift();
    h.future.length=0;
    h.signature=signature(next);
-   update(clone(next));
    host.message('Circuit applied to working plasmid. Undo is available; commit separately.');
    return true;
  }

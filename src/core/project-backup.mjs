@@ -137,10 +137,15 @@ export function parseProjectBackup(text) {
   object(payload, 'payload');
   if (payload.format !== PROJECT_BACKUP_FORMAT) fail('unsupported format');
   json(payload, 'payload');
-  const db = payload.data;
+  return validateProjectDatabase(payload.data);
+}
+
+/** Shared semantic validation for live storage and backup import. */
+export function validateProjectDatabase(db, {maxProjects = 500} = {}) {
+  json(db, 'data');
   object(db, 'data'); object(db.repos, 'repos');
   const entries = Object.entries(db.repos);
-  if (!entries.length || entries.length > 500) fail('expected 1–500 projects');
+  if (!entries.length || entries.length > maxProjects) fail('invalid project count');
   id(db.cur, 'active project');
   if (!own(db.repos, db.cur)) fail('active project missing');
   string(db.tab, 'tab');

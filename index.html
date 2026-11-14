@@ -126,13 +126,37 @@ function toSBOL(w){let a='';w.features.forEach((f,i)=>{a+=`    <sbol:SequenceAnn
 function download(n,t){const b=new Blob([t],{type:'text/plain'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
 function seqDiff(o,n){if(o===n)return null;let p=0;while(p<o.length&&p<n.length&&o[p]===n[p])p++;let s=0;while(s<o.length-p&&s<n.length-p&&o[o.length-1-s]===n[n.length-1-s])s++;return{pre:p,rm:o.slice(p,o.length-s),add:n.slice(p,n.length-s),sufStart:o.length-s};}
 /* ============================================================ GIT MODEL ============================================================ */
-const KEY='locusPro_v1';let DB;
-function load(){try{DB=JSON.parse(localStorage.getItem(KEY))||null;}catch(e){DB=null;}if(!DB||!DB.repos||!Object.keys(DB.repos).length){DB=null;seed();}Object.values(DB.repos).forEach(migrate);}
+const KEY='locusPro_v1';let DB,projectStorage;
+function load(){const result=projectStorage.open({create:()=>{seed();return DB;},migrate:db=>{Object.values(db.repos).forEach(migrate);}});DB=result.data;}
 function migrate(r){r.pulls=r.pulls||[];r.issues=r.issues||[];r.tags=r.tags||[];r.wiki=r.wiki||[{title:'Home',body:'Welcome to the '+r.name+' wiki.'}];if(r.protected===undefined)r.protected=false;r.pulls.forEach(p=>{p.reviews=p.reviews||[];});r.issues.forEach(i=>{i.comments=i.comments||[];i.labels=i.labels||[];});}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));return true;}catch(e){console.error('Photon local save failed:',e);return false;}}
+function save(){
+ try{if(!projectStorage){const error=new Error('Project storage is unavailable');error.name='ProjectStorageError';throw error;}const result=projectStorage.save(DB);showStorageStatus();return result;}
+ catch(error){if(projectStorage)DB=projectStorage.rollback();showStorageStatus(error);queueMicrotask(()=>render());throw error;}
+}
+function showStorageStatus(error){
+ const status=projectStorage?.status;
+ const backup=document.getElementById('photonBackup');if(backup)backup.disabled=!projectStorage||!!status?.blocked;
+ let banner=document.getElementById('photonStorageNotice');
+ const message=status?.issue?.message||error?.message;
+ if(!message){banner?.remove();return;}
+ if(!banner){banner=document.createElement('section');banner.id='photonStorageNotice';banner.className='card';banner.setAttribute('role','alert');banner.style.cssText='margin:10px;padding:12px;border-color:var(--partial)';document.querySelector('.topbar').after(banner);}
+ banner.replaceChildren();
+ const text=document.createElement('div');
+ text.textContent=message+(!projectStorage?' A temporary demo is shown; project saving is unavailable.':status?.blocked?' A temporary demo is shown; stored projects are not replaced.': ' The failed action was rolled back. Download unsaved recovery before closing or reloading this tab.');
+ banner.append(text);
+ if(status?.recoveryRaw!==null&&status?.recoveryRaw!==undefined){
+  const button=document.createElement('button');button.className='btn sm';button.id='photonStorageRecovery';
+  button.textContent=status.recoveryKind==='original'?'Download original stored data':'Download unsaved recovery';
+  button.onclick=()=>{const raw=projectStorage.status.recoveryRaw;if(projectStorage.status.recoveryKind==='original')download('photon-original-storage.json',raw);else download('photon-unsaved-recovery.json','{"format":"photon/local-project-backup/1","data":'+raw+'}');};
+  banner.append(button);
+ }
+}
+window.addEventListener('error',event=>{if(event.error?.name==='ProjectStorageError'){event.preventDefault();flash(event.error.message);}});
+window.addEventListener('unhandledrejection',event=>{if(event.reason?.name==='ProjectStorageError'){event.preventDefault();flash(event.reason.message);}});
+window.addEventListener('beforeunload',event=>{if(projectStorage?.status.issue&&projectStorage.status.recoveryKind==='unsaved'){event.preventDefault();event.returnValue='';}});
 const uid=()=>Math.random().toString(36).slice(2,9);
 function snap(w){return{name:w.name,seq:w.seq,topology:w.topology,features:JSON.parse(JSON.stringify(w.features))};}
-function seed(){const s=SAMPLE();autoAnn(s);annORFs(s);const rid=uid(),cid=uid();DB={repos:{},cur:rid,tab:'code'};DB.repos[rid]={id:rid,name:s.name,desc:'Demo plasmid.',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Initial import',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+s.name+'\n\nOpen, versioned DNA design. Edit → commit → branch → PR → merge.'}],readme:'# '+s.name+'\n\nAn open, versioned DNA design. Every change is tracked like Git.'};save();}
+function seed(){const s=SAMPLE();autoAnn(s);annORFs(s);const rid=uid(),cid=uid();DB={repos:{},cur:rid,tab:'code'};DB.repos[rid]={id:rid,name:s.name,desc:'Demo plasmid.',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Initial import',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+s.name+'\n\nOpen, versioned DNA design. Edit → commit → branch → PR → merge.'}],readme:'# '+s.name+'\n\nAn open, versioned DNA design. Every change is tracked like Git.'};}
 const repo=()=>DB.repos[DB.cur];const W=()=>repo().working;
 const head=()=>{const r=repo();return r.commits[r.branches[r.branch].head];};
 const isDirty=()=>{const h=head();return h?JSON.stringify(h.snap)!==JSON.stringify(W()):true;};
@@ -425,9 +449,8 @@ function openTutorial(){const sec=(title,rows)=>`<details style="margin-bottom:8
  ${sec('Version control tabs',[['Commits','Full history. Diff vs working, cherry-pick, revert, tag, amend, rebase, stash.'],['Compare','Diff any two branches or commits.'],['Branches','Create, switch, merge (conflict-aware), or squash-merge; open a PR.'],['Pull Requests','Review (approve / request changes / comment, incl. @position), then merge or squash.'],['Issues','Track work; add comments, labels, assignees, milestones; Board (kanban) view.'],['Wiki','Editable markdown pages.'],['Insights','Commit graph across branches + blame (which commit last touched each region).'],['Settings','Rename, protect main branch, download bundle; mock remote/collaborators/CLI.']])}
  ${sec('Labs — Phase 2 / 3 previews',[['CRISPR','Real NGG protospacer scan; off-target scoring is mock.'],['Parts registry','Mock catalog; Insert really appends a part.'],['Cloud sync','Mock — the paid Team tier.'],['Order DNA','Real per-bp pricing; mock checkout.'],['AI copilot','Mock chat; a few commands (add his-tag, optimize, annotate, gc, orf) really run.'],['Plugins / Compliance','Mock marketplace and 21 CFR Part 11 toggles; audit trail is your real commit history.'],['Phylo / NGS / Sanger','Mock visuals (out of scope — Geneious territory).']])}
  <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" onclick="closeModal();startTour()">▶ Start guided tour</button><button class="btn" onclick="closeModal()">Got it</button></div></div>`);}
-load();render();
 (function(){const tb=document.querySelector('.topbar');if(tb&&!document.getElementById('helpBtn')){const b=document.createElement('button');b.id='helpBtn';b.className='btn sm';b.textContent='? Tutorial';const c=document.getElementById('btnCommit');b.onclick=openTutorial;tb.insertBefore(b,c);}})();
-try{if(!localStorage.getItem('locusSeenTut')){localStorage.setItem('locusSeenTut','1');setTimeout(openTutorial,400);}}catch(e){}
+
 /* ===== interactive guided tour ===== */
 const TOUR=[
  {sel:'.topbar',title:'Welcome to Photon',text:'This top bar is your control center — repo, branch, commit, import/export. Let’s walk through the whole app.'},
@@ -546,7 +569,6 @@ function themeLabel(t){return t==='dark'?'☾ Dark':t==='light'?'☀ Light':'◐
 function applyTheme(t){const h=document.documentElement;if(t==='dark'||t==='light')h.setAttribute('data-theme',t);else h.removeAttribute('data-theme');try{localStorage.setItem('photonTheme',t);}catch(e){}}
 function cycleTheme(){const o=['auto','light','dark'];const t=o[(o.indexOf(currentTheme())+1)%3];applyTheme(t);const b=document.getElementById('themeBtn');if(b)b.textContent=themeLabel(t);flash('Theme: '+t);}
 applyTheme(currentTheme());
-render();
 /* ===== GitHub-style repositories home + repo overview ===== */
 function renderHome(v){const repos=Object.values(DB.repos);const q=(DB._hq||'').toLowerCase();const list=repos.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.desc||'').toLowerCase().includes(q));
  v.innerHTML=`<div class="page"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px"><h2 class="ph" style="margin:0">Your repositories</h2><span class="tagd">${repos.length} total</span><div style="flex:1"></div><button class="btn primary" id="hNew">+ New repository</button></div><input id="hq" placeholder="Find a repository…" value="${esc(DB._hq||'')}" style="margin:10px 0 16px"><div id="hlist"></div></div>`;
@@ -576,7 +598,6 @@ render=function(){if(DB.tab==='home'||DB.tab==='overview'){renderChrome();render
 (function(){const tb=document.querySelector('.topbar');if(tb&&!document.getElementById('homeBtn')){const h=document.createElement('button');h.id='homeBtn';h.className='btn sm';h.textContent='⌂ Repos';h.title='All repositories';h.onclick=()=>{DB.tab='home';render();};const rd=document.getElementById('repoBtn').closest('.dd');tb.insertBefore(h,rd);}})();
 const _photonRenderMap=renderMap;
 renderMap=function(){document.querySelectorAll('.maptab[data-v]').forEach(t=>t.classList.toggle('active',t.dataset.v===U.mapView));_photonRenderMap();window.PhotonWrappedFeatures?.render?.();window.PhotonRestrictionOverlay?.render?.();window.PhotonPrimerMap?.render?.();};
-render();
 // Photon 2.1: replace the legacy GenBank codec only for Photon-produced
 // export subset, avoiding silent origin-crossing coordinate corruption.
 const _photonLegacyGenbankExport=toGenBank;
@@ -642,10 +663,11 @@ window.PhotonEditorBridgeHost={
    const next=parseProjectBackup(await file.text()),records=next.repos;
    if(!confirm('Restore '+Object.keys(records).length+' project(s)? This REPLACES all current browser-local Photon projects. Export a backup of your current projects first.'))return;
    // Persist before replacing in-memory data; storage failures leave the UI unchanged.
-   localStorage.setItem(KEY,JSON.stringify(next));
-   DB=next;U.sel=-1;render();
+   if(!projectStorage)throw new Error('Project storage is unavailable; reload with modules available before restoring');
+   projectStorage.save(next,{restore:true});
+   DB=next;U.sel=-1;showStorageStatus();render();
    flash('Restored '+Object.keys(DB.repos).length+' local Photon projects.');
-  }catch(error){flash('Backup restore rejected: '+error.message);}
+  }catch(error){if(error.name==='ProjectStorageError')showStorageStatus();flash('Backup restore rejected: '+error.message);}
  };
  top.insertBefore(restore,document.getElementById('btnCommit'));
  top.insertBefore(backup,restore);
@@ -658,29 +680,18 @@ document.addEventListener('click',event=>{
  event.preventDefault();event.stopImmediatePropagation();
  flash('Safe DNA editor unavailable. Run Photon using a local HTTP server (python -m http.server 8765) or the hosted site.');
 },true);
+document.body.inert=true;
+window.PhotonInitializeStorage=store=>{
+ projectStorage=store;load();render();showStorageStatus();
+ document.body.inert=false;
+ if(!store.status.issue){try{if(!localStorage.getItem('locusSeenTut')){localStorage.setItem('locusSeenTut','1');setTimeout(openTutorial,400);}}catch(e){}}
+};
+window.PhotonProjectReady=import('./src/ui/bootstrap.mjs').catch(error=>{
+ projectStorage=undefined;document.body.inert=false;
+ seed();render();showStorageStatus(new Error('Project modules could not load. Stored projects were left untouched. Serve Photon over HTTP and reload.'));
+ console.error(error);
+});
 //__P1__
 </script>
-<script type="module" src="./src/ui/editor-bridge.mjs"></script>
-<script type="module" src="./src/ui/plasmid-tools.mjs"></script>
-<script type="module" src="./src/ui/restriction-overlay.mjs"></script>
-<script type="module" src="./src/ui/cloning-tools.mjs"></script>
-<script type="module" src="./src/ui/gibson-tools.mjs"></script>
-<script type="module" src="./src/ui/golden-gate-tools.mjs"></script>
-<script type="module" src="./src/ui/primer-tools.mjs"></script>
-<script type="module" src="./src/ui/primer-design-tools.mjs"></script>
-<script type="module" src="./src/ui/primer3-local-tools.mjs"></script>
-<script type="module" src="./src/ui/primer-map.mjs"></script>
-<script type="module" src="./src/ui/primer-mismatch-tools.mjs"></script>
-<script type="module" src="./src/ui/wrapped-features.mjs"></script>
-<script type="module" src="./src/ui/feature-io-tools.mjs"></script>
-<script type="module" src="./src/ui/sbol3-tools.mjs"></script>
-<script type="module" src="./src/ui/sbol3-assembly-tools.mjs"></script>
-<script type="module" src="./src/ui/part-library-tools.mjs"></script>
-<script type="module" src="./src/ui/visual-circuit-tools.mjs"></script>
-<script type="module" src="./src/ui/circuit-apply-tools.mjs"></script>
-<script type="module" src="./src/ui/circular-backbone-tools.mjs"></script>
-<script type="module" src="./src/ui/backbone-library-tools.mjs"></script>
-<script type="module" src="./src/ui/construct-qc-tools.mjs"></script>
-<script type="module" src="./src/ui/translation-explorer-tools.mjs"></script>
 </body>
 </html>

@@ -2,6 +2,31 @@
 
 ## Takeover milestones (latest session)
 
+### Follow-up: storage reliability
+
+- Continue from `723cbdb0`. Main project saves now go through `project-storage.mjs`:
+  semantic validation, compare-before-write against observed stored bytes, throwing
+  failures and rollback to the last successful in-memory database checkpoint.
+  Legacy callbacks stop before success messages. Editor undo/redo stacks change
+  only after persistence succeeds.
+- Startup validation preserves corrupt/unreadable stored data and shows a temporary
+  demo with saving blocked. Recovery notice offers exact original bytes, or a JSON
+  backup of the attempted unsaved state after a failed action. Explicit validated
+  restore can replace corrupt data after confirmation. Original legacy migrations
+  run only in memory until a successful save.
+- `src/ui/bootstrap.mjs` initializes storage before loading the existing UI modules.
+  Do not restore eager `load()/render()` calls in the inline script: they bypass
+  startup validation or access uninitialized project data.
+- Tests cover actual Chromium quota exhaustion on a 1 Mb construct, failed edits,
+  undo history, Commit, single/collection imports, denied reads, corrupt startup,
+  observed cross-tab conflicts, reload and full browser restart.
+- Recovery copies are in memory, not a durable crash journal. Download before
+  closing/reloading or another successful save. localStorage compare-before-write
+  cannot provide atomic simultaneous-writer isolation. Part/backbone libraries
+  remain separate localStorage keys with separate export/save controls.
+- Next storage work: versioned IndexedDB migration, crash-persistent recovery,
+  auxiliary-key migration and conflict reconciliation. See `STORAGE.md`.
+
 - Continued from verified remote HEAD `c5af07f0`; protected `main` and retained PR #1 as draft.
 - Actual Cloudflare log supplied by user: `versions upload` ran without building,
   so `dist/` was missing. Added Wrangler custom build hook and clean-build dry-run CI.
