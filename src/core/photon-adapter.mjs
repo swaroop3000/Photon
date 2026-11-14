@@ -109,6 +109,59 @@ export function applySequenceRevision(working, proposedSequence) {
   const affectedFeatures = features.filter(f => f.affected).map(f => f.name ?? '(unnamed)');
   return { working: { ...prev, seq: result.sequence, features }, changed: true, affectedFeatures, edit: edits.length===1?edits[0]:null, edits };
 }
+/**
+ * Apply an explicit, nonoverlapping batch of zero-based half-open edits against
+ * the ORIGINAL sequence. Each edit is {start,end,insert}; no alignment guesswork.
+ * Edits are applied right-to-left so coordinates of earlier edits do not shift.
+ * Returns a single atomic construct revision: any unsafe feature edit aborts all.
+ * Zero-length insertions at the same coordinate are ambiguous and rejected.
+ */
+export function applyExplicitEdits(working, operations) {
+  if(!Array.isArray(operations)||!operations.length)throw new RangeError('At least one edit is required');
+  const before=normalizeDNA(working?.seq);
+  if(!['linear','circular'].includes(working?.topology))
+    throw new RangeError('Invalid DNA topology');
+  if(!Array.isArray(working.features))throw new TypeError('features must be an array');
+  const edits=operations.map(op=>{
+    if(!op||!Number.isSafeInteger(op.start)||!Number.isSafeInteger(op.end)||
+       op.start<0||op.end<op.start||op.end>before.length)
+      throw new RangeError('Invalid edit interval');
+    return {start:op.start,end:op.end,insert:normalizeDNA(op.insert??'')};
+  }).sort((a,b)=>b.start-a.start||b.end-a.end);
+  for(let i=1;i<edits.length;i++){
+    if(edits[i].end>edits[i-1].start || edits[i].start===edits[i-1].start)
+      throw new RangeError('Overlapping or coincident edits are ambiguous');
+  }
+  for(const f of working.features){
+    if(f.start>f.end){
+      if(working.topology!=='circular'||!Number.isSafeInteger(f.start)||
+         !Number.isSafeInteger(f.end)||f.end<1||f.start>before.length)
+        throw new RangeError('Invalid circular origin-spanning feature coordinates');
+    }else assertLegacyFeature(f,before.length);
+  }
+  let current=cloneState(working);
+  for(const edit of edits){
+    if(current.features.some(f=>f.start>f.end)){
+      current=applyCircularGapEdit(current,edit).working;
+    }else{
+      const core=current.features.map(f=>({...f,start:f.start-1}));
+      const result=editSequence(current.seq,core,edit);
+      if(result.features.some(f=>f.end<=f.start))
+        throw new RangeError('Edit would erase an annotation; remove or reannotate it explicitly');
+      const features=result.features.map(f=>{
+        const {affected,...rest}=f;
+        return {...rest,start:f.start+1,...(affected?{affected:true}:{})};
+      });
+      if(features.some(f=>f.start<1||f.end>result.sequence.length))
+        throw new RangeError('Edit produces invalid annotation coordinates; reannotation required');
+      current={...current,seq:result.sequence,features};
+    }
+  }
+  return {working:current,changed:current.seq!==before,
+    affectedFeatures:current.features.filter(f=>f.affected).map(f=>f.name??'(unnamed)'),
+    edits};
+}
+
 /** History stores full sequence+feature snapshots (not sequence-only).
  * Bound history is intentionally ephemeral; caller decides how to persist it.
  */
