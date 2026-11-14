@@ -102,6 +102,7 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
  const sequence=normalizeDNA(working.seq,{allowAmbiguous:false}),n=sequence.length;
  if(!n)throw new RangeError('Cannot analyze empty DNA');
  if(n>1000000)throw new RangeError('QC supports up to 1,000,000 bases');
+ if(working.features.length>2000)throw new RangeError('QC supports up to 2,000 annotations per report');
  for(const [key,value,min,max] of [
   ['homopolymerMin',homopolymerMin,2,100],
   ['tandemMinUnits',tandemMinUnits,2,20],
@@ -169,6 +170,23 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
  }
  if(overlaps)warnings.push(warning('ANNOTATION_OVERLAP','info',
    overlaps+' pair(s) of contiguous annotations overlap (may be intentional).',{pairs:overlaps}));
+ // Adjacent feature boundaries are inspection points, not verified
+ // cloning junctions. This report has no source-template evidence.
+ const annotationJunctions=[];
+ const sorted=[...occupied].sort((a,b)=>a.start-b.start||a.end-b.end);
+ for(let i=0;i<sorted.length;i++){
+   const left=sorted[i],right=sorted[(i+1)%sorted.length];
+   const adjacent=(i<sorted.length-1&&left.end+1===right.start)||
+     (circular&&i===sorted.length-1&&left.end===n&&right.start===1);
+   if(!adjacent)continue;
+   const position=left.end%n;
+   const flank=Math.min(6,n);
+   const upstream=Array.from({length:flank},(_,j)=>sequence[(position-flank+j+n)%n]).join('');
+   const downstream=Array.from({length:flank},(_,j)=>sequence[(position+j)%n]).join('');
+   annotationJunctions.push({leftFeature:left.name,rightFeature:right.name,
+     boundary:position,flanks:upstream+'|'+downstream,
+     assessment:'sequence context only; reference junction not supplied'});
+ }
  const runs=runWindows(sequence,{circular,minRun:homopolymerMin});
  const tandem=tandemRepeats(sequence,{circular,minUnits:tandemMinUnits,maxMotif:tandemMaxMotif,limit:repeatLimit});
  const orfs=predictedOrfs(sequence,{minimumAminoAcids:orfMinAminoAcids,limit:100});
@@ -179,13 +197,14 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
  return {
    format:'photon/construct-qc/1',name:String(working.name??'Unnamed'),topology:working.topology,
    length:n,baseCounts:counts,gcFraction:gc,featureCount:working.features.length,
-   features,warnings,
+   features,warnings,annotationJunctions,
    repeats:{homopolymers:runs,tandem:tandem.items,truncated:tandem.truncated},
    predictedOrfs:orfs.items,orfListTruncated:orfs.truncated,
    methodology:{
      coordinates:'1-based inclusive features; predicted ORFs on linearized strands',
      CDS:'Standard genetic code and ATG start heuristic; no alternative genetic code validation',
      restrictions:'No enzyme or wet-lab validation',
+     junctions:'Adjacent annotation boundaries only, no sequence-source verification',
      coverage:'Advisory sequence analysis only; does not establish construct viability'
    }
  };
