@@ -129,5 +129,5 @@ export function renderPartLibrary(){
  };
  panel.append(heading,note,field,rootRow,buttons,result);root.append(panel);
 }
-globalThis.PhotonPartLibraryUI={render:renderPartLibrary};
+globalThis.PhotonPartLibraryUI={render:renderPartLibrary,parseEditor,editorText};
 renderPartLibrary();
