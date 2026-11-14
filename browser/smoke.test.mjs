@@ -148,3 +148,26 @@ test('safe edit inside circular annotation gap preserves wrapped feature and und
   assert.deepEqual([state.f.start,state.f.end],[10,3]);
  }finally{await browser.close();}
 });
+
+
+test('Photon SBOL interchange preserves circular annotations and supported qualifiers in the browser',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  const result=await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const input={name:'p&demo',seq:'AACCGGTTAACC',topology:'circular',
+    features:[{name:'wrap & gene',type:'CDS',start:10,end:3,strand:-1,
+      qualifiers:{gene:'abc',note:'verified'}}]};
+   const xml=toSBOL(input);
+   return {xml,read:parseSBOL(xml),unsupported: (()=>{try{parseSBOL('<sbol:SBOL/>');return false;}catch{return true;}})()};
+  });
+  assert.equal(result.unsupported,true);
+  assert.deepEqual(result.read,{name:'p&demo',seq:'AACCGGTTAACC',topology:'circular',
+   features:[{name:'wrap & gene',type:'CDS',start:10,end:3,strand:-1,qualifiers:{gene:'abc',note:'verified'}}]});
+  assert.match(result.xml,/photon:format="Photon-2.3"/);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
