@@ -35,6 +35,19 @@ export function applySequenceRevision(working, proposedSequence) {
   if (!Array.isArray(working.features)) throw new TypeError('features must be an array');
   // Existing wrapped features are valid on circles, but the current linear
   // edit liftover cannot safely relocate them after sequence changes.
+  // Validate every feature before accepting even a no-op revision. Otherwise
+  // malformed annotations can silently survive until a subsequent edit.
+  for (const feature of working.features) {
+    if (feature.start > feature.end) {
+      if (working.topology !== 'circular' ||
+          !Number.isSafeInteger(feature.start) || !Number.isSafeInteger(feature.end) ||
+          feature.end < 1 || feature.start > before.length) {
+        throw new RangeError('Invalid circular origin-spanning feature coordinates');
+      }
+    } else {
+      assertLegacyFeature(feature, before.length);
+    }
+  }
   const hasWrapped = working.features.some(f => f.start > f.end);
   if(hasWrapped) {
     if(working.topology!=='circular') throw new RangeError('Origin-spanning features require circular DNA');
@@ -49,6 +62,12 @@ export function applySequenceRevision(working, proposedSequence) {
   if (before === after) return { working: prev, changed: false, affectedFeatures: [], edit: null };
   const edit = boundsForReplacement(before, after);
   const result = editSequence(before, coreFeatures, edit);
+  // A zero-length annotation has no valid representation in the legacy
+  // 1-based inclusive model. Reject the transaction rather than silently
+  // dropping a feature from the construct and its future commits.
+  if (result.features.some(f => f.end <= f.start)) {
+    throw new RangeError('Edit would erase an annotation; remove or reannotate it explicitly');
+  }
   const features = result.features.map(f => {
     const { affected, ...rest } = f;
     return { ...rest, start: f.start + 1, ...(affected ? { affected: true } : {}) };
