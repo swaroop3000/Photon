@@ -3,6 +3,7 @@
  * No chemistry, ligation efficiency or biological viability is inferred.
  */
 import {circuitIntoCircularBackbone} from '../core/circular-backbone.mjs';
+import {inspectCircularInsertion} from '../core/junction-check.mjs';
 
 export function renderCircularBackboneApply(){
  const panel=document.getElementById('photonPartsV27');
@@ -14,9 +15,9 @@ export function renderCircularBackboneApply(){
  if(!definitions||!root)return;
  const container=document.createElement('section');container.id='photonCircularBackboneV30';
  container.style.cssText='border-top:1px solid var(--line);padding-top:15px;margin-top:17px';
- const title=document.createElement('h3');title.textContent='Circular plasmid backbone + circuit · Photon 3.0';
+ const title=document.createElement('h3');title.textContent='Circular plasmid backbone + circuit · Photon 3.1';
  const help=document.createElement('div');help.className='mini';
- help.textContent='Backbone source: current circular working plasmid. Choose how many backbone bases precede the insertion (0…length). Locations that would split an existing annotation are rejected. In-silico sequence insertion only — no ligation or cloning prediction.';
+ help.textContent='Choose current or saved circular backbone below, then set a 0-based insertion boundary. Review junction sequences, selected restriction sites, and annotation liftover before applying. Sequence-only model; no biochemical cloning prediction.';
  const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0';
  const label=document.createElement('label');label.textContent='Insertion boundary (0-based interbase)';
  label.htmlFor='photonBackboneBoundary';
@@ -46,36 +47,52 @@ export function renderCircularBackboneApply(){
    invalidate();
    try{
      const current=structuredClone(host.working());
+     const backbone=globalThis.PhotonBackboneLibrary?.getSelected?.()??current;
+     const selection=globalThis.PhotonBackboneLibrary?.selectionSignature?.()??'current';
      const library=api.parseEditor(definitions.value);
      const rootID=root.value.trim();
      const at=Number(boundary.value);
      if(boundary.value.trim()==='')throw new RangeError('Enter an insertion boundary');
-     const candidate=circuitIntoCircularBackbone(library,rootID,current,{boundary:at});
+     const candidate=circuitIntoCircularBackbone(library,rootID,backbone,{boundary:at});
+     const inserted=candidate.seq.slice(at,at+candidate.seq.length-backbone.seq.length);
+     const junctions=inspectCircularInsertion(backbone.seq,inserted,at);
      pending={
        identity:host.identity(),definitions:definitions.value,root:rootID,
-       boundary:boundary.value,before:signature(current),replacement:candidate
+       boundary:boundary.value,before:signature(current),source:signature(backbone),
+       selection,replacement:candidate
      };
-     details.textContent='Backbone: '+current.name+' · '+current.seq.length+' bp · '+
-       current.features.length+' annotations · circular'+
-       '\nCircuit: '+(candidate.seq.length-current.seq.length)+' bp · '+
-       (candidate.features.length-current.features.length)+' new annotations'+
+     details.textContent='Selected backbone: '+backbone.name+' · '+backbone.seq.length+' bp · '+
+       backbone.features.length+' annotations · circular'+
+       '\nCurrent working plasmid: '+current.name+' · '+current.seq.length+' bp'+
+       '\nCircuit: '+(candidate.seq.length-backbone.seq.length)+' bp · '+
+       (candidate.features.length-backbone.features.length)+' new annotations'+
        '\nInsertion: after '+at+' backbone bases'+
        '\nResult: '+candidate.name+' · '+candidate.seq.length+' bp · '+
        candidate.features.length+' annotations · circular'+
-       '\n\nOriginal backbone annotations and their metadata are preserved. New component annotations occupy the inserted sequence.'+
-       '\nThis is an in-silico concatenation, NOT validated enzymatic cloning. No Git commit will be created.';
+       '\n\nJunctions (left | right, top strand):\n'+junctions.junctions.map(j=>j.name+': '+j.sequence).join('\n')+
+       '\nCurated restriction sites before → after:\n'+junctions.enzymes.map(e=>e+': '+junctions.siteCountsBefore[e]+' → '+junctions.siteCountsAfter[e]).join('; ')+
+       '\nSites crossing inserted junctions: '+(junctions.junctionSpanningSites.map(s=>s.enzyme+' @ '+s.start).join(', ')||'none detected')+
+       '\nWarnings: '+junctions.warnings.join(' ')+
+       '\n\nSelected backbone features and their metadata are preserved. New annotations occupy the inserted sequence.'+
+       '\nThis is in-silico concatenation, NOT validated enzymatic cloning. No Git commit is created.';
      consent.style.display='flex';apply.style.display='inline-flex';
    }catch(error){details.textContent='Review rejected: '+error.message;}
  };
  checkbox.onchange=()=>{apply.disabled=!(checkbox.checked&&pending);};
  for(const input of [definitions,root,boundary])
    input.addEventListener('input',()=>{if(pending)invalidate('Input changed. Review again before applying.');});
+ panel.addEventListener('change',event=>{
+   if(event.target?.id==='photonBackboneSource'&&pending)
+     invalidate('Selected backbone changed. Review again.');
+ });
  apply.onclick=()=>{
    if(!pending||!checkbox.checked)return;
    const token=pending;
    if(token.identity!==host.identity()||token.definitions!==definitions.value||
      token.root!==root.value.trim()||token.boundary!==boundary.value||
-     token.before!==signature(host.working())){
+     token.before!==signature(host.working())||
+     token.selection!==(globalThis.PhotonBackboneLibrary?.selectionSignature?.()??'current')||
+     token.source!==signature(globalThis.PhotonBackboneLibrary?.getSelected?.()??host.working())){
      invalidate('Working construct or assembly changed. Review again.');return;
    }
    try{
