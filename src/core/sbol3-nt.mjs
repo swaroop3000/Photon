@@ -36,12 +36,14 @@ export function serializeSbol3NTriples(w){
  const add=(s,p,o)=>t.push(triple(s,p,o));
  add(component,uris.rdfType,I(uris.component));
  add(component,pred('displayId'),L(id));
+ add(component,pred('hasNamespace'),I(BASE));
  add(component,pred('name'),L(w.name||id));
  add(component,pred('type'),I(DNA));
  add(component,pred('role'),I(SO+(w.topology==='circular'?'0000988':'0000987')));
  add(component,pred('hasSequence'),I(sequence));
  add(sequence,uris.rdfType,I(uris.sequence));
- add(sequence,pred('displayId'),L(id+'_sequence'));
+ add(sequence,pred('displayId'),L('sequence'));
+ add(sequence,pred('hasNamespace'),I(component+'/'));
  add(sequence,pred('elements'),L(seq.toLowerCase()));
  add(sequence,pred('encoding'),I(IUPAC));
  for(const [index,f] of (w.features||[]).entries()){
