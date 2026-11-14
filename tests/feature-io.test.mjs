@@ -100,3 +100,12 @@ test('external GenBank multiline qualifiers are rejected rather than silently tr
  const altered=externalGenbank.replace('/product="synthetic peptide"','/product="synthetic\n                     peptide"');
  assert.throws(()=>parseGenbank(altered),/Unsupported GenBank qualifier|Multiline/);
 });
+
+test('GenBank importer rejects multiple or unterminated records without silent data loss',()=>{
+ const a=serializeGenbank({name:'a',topology:'linear',seq:'AACCGG',features:[]});
+ const b=serializeGenbank({name:'b',topology:'linear',seq:'GGTACC',features:[]});
+ assert.throws(()=>parseGenbank(a+b),/exactly one terminated/);
+ assert.throws(()=>parseGenbank(a.replace(/\/\/\s*$/,'')),/exactly one terminated/);
+ assert.throws(()=>parseGenbank(a+'trailing invalid data'),/exactly one terminated/);
+ assert.equal(parseGenbank(a).seq,'AACCGG');
+});
