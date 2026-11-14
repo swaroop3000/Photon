@@ -320,3 +320,56 @@ test('visual circuit designer inserts, reverses, moves, removes without editing 
    assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('reviewed circuit application replaces working construct and undo restores full snapshot',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  await page.locator('#photonCircuitApplyV29').waitFor();
+  const panel=page.locator('#photonCircuitApplyV29');
+  await panel.getByRole('button',{name:'Review plasmid replacement'}).click();
+  assert.match(await panel.locator('#photonCircuitApplyReview').innerText(),/Replacement: circuit/);
+  const apply=panel.getByRole('button',{name:'Apply reviewed circuit'});
+  assert.equal(await apply.isEnabled(),false);
+  await panel.locator('#photonCircuitApplyConfirm').check();
+  await apply.click();
+  const changed=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(changed.name,'circuit');
+  assert.equal(changed.topology,'linear');
+  assert.equal(changed.features.length,5);
+  assert.equal(changed.seq.length,42);
+  assert.deepEqual(changed.features.map(f=>f.strand),[1,-1,1,1,-1]);
+  assert.notEqual(changed.seq,before.seq);
+  await page.locator('.tab[data-tool="features"]').click();
+  await page.locator('#ub').click();
+  const restored=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.deepEqual(restored,before);
+  await page.locator('#rb').click();
+  const again=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.deepEqual(again,changed);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+
+test('circuit application rejects stale reviews after circuit edits',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonCircuitApplyV29');
+  await panel.getByRole('button',{name:'Review plasmid replacement'}).click();
+  await page.locator('#photonPartsDefinitions').fill('part p ATGC\nassembly circuit p+');
+  assert.equal(await panel.getByRole('button',{name:'Apply reviewed circuit'}).isVisible(),false);
+  const unchanged=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.deepEqual(unchanged,before);
+ }finally{await browser.close();}
+});
