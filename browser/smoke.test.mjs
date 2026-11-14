@@ -702,3 +702,55 @@ test('Photon 3.4 rejects a stale Primer3 result after template change',async()=>
    assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/changed since request export/);
  }finally{await browser.close();}
 });
+
+test('editor commit boundary isolates undo and preserves committed annotations',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+   const page=await browser.newPage();
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+   if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
+   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+   const idBefore=await page.evaluate(()=>window.PhotonEditorBridgeHost.identity());
+   await page.locator('#se').fill(before.seq+'A');
+   await page.locator('#ap').click();
+   await page.evaluate(()=>commit('DNA integration regression fixture'));
+   const idAfter=await page.evaluate(()=>window.PhotonEditorBridgeHost.identity());
+   assert.notEqual(idAfter,idBefore);
+   const committed=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+   assert.equal(committed.seq,before.seq+'A');
+   await page.locator('#ub').click();
+   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),committed);
+   // Undo within the new commit boundary must work, but not cross it.
+   await page.locator('#se').fill(committed.seq+'C');
+   await page.locator('#ap').click();
+   await page.locator('#ub').click();
+   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),committed);
+   const committedStored=await page.evaluate(()=>structuredClone(head().snap));
+   assert.deepEqual(committedStored,committed);
+   await page.evaluate(()=>createBranch('integration-branch'));
+   assert.notEqual(await page.evaluate(()=>window.PhotonEditorBridgeHost.identity()),idAfter);
+   assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('invalid annotated deletion is rejected without mutating working DNA',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+    if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+    const w=window.PhotonEditorBridgeHost.working();
+    w.seq='AACCGGTTAACC';w.topology='linear';
+    w.features=[{name:'essential',start:5,end:6,type:'CDS',strand:1}];
+    window.PhotonEditorBridgeHost.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('#se').fill('AACCTTAACC');
+  await page.locator('#ap').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
