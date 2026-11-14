@@ -575,3 +575,55 @@ test('Photon 3.2 refuses to export a report after the working construct changes'
   assert.equal(await exportButton.isVisible(),false);
  }finally{await browser.close();}
 });
+
+
+test('Photon 3.3 translates six frames, reports CDS and downloads versioned JSON without mutation',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage({acceptDownloads:true});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const w=window.PhotonEditorBridgeHost.working();
+   w.name='TranslationDemo';w.seq='ATGAAATAA';w.topology='linear';
+   w.features=[{name:'gene',type:'CDS',start:1,end:9,strand:1}];
+   window.PhotonEditorBridgeHost.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonTranslationV33');
+  await panel.waitFor();
+  await panel.locator('#photonOrfMinV33').fill('1');
+  await panel.getByRole('button',{name:'Analyze translation'}).click();
+  assert.match(await panel.locator('#photonTranslationSummary').innerText(),/Six reading frames/);
+  assert.match(await panel.locator('#photonTranslationSummary').innerText(),/1 complete ORF/);
+  assert.match(await panel.locator('#photonFrameViewV33').innerText(),/Protein preview: MK\*/);
+  assert.match(await panel.locator('#photonCDSViewV33').innerText(),/gene/);
+  await panel.locator('#photonFrameSelectV33').selectOption('-1');
+  assert.match(await panel.locator('#photonFrameViewV33').innerText(),/Frame -1/);
+  const downloadPromise=page.waitForEvent('download');
+  await panel.getByRole('button',{name:'Download translation JSON'}).click();
+  const download=await downloadPromise;
+  assert.equal(download.suggestedFilename(),'photon-translation-TranslationDemo.json');
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('Photon 3.3 rejects stale translation report downloads after DNA changes',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  await page.locator('.tab[data-tool="builder"]').click();
+  const panel=page.locator('#photonTranslationV33');
+  await panel.getByRole('button',{name:'Analyze translation'}).click();
+  const download=panel.getByRole('button',{name:'Download translation JSON'});
+  assert.equal(await download.isVisible(),true);
+  await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
+  await download.click();
+  assert.match(await panel.locator('#photonTranslationSummary').innerText(),/Construct changed/);
+  assert.equal(await download.isVisible(),false);
+ }finally{await browser.close();}
+});
