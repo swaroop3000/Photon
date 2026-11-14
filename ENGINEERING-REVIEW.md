@@ -25,6 +25,7 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Integrate bounded (100-record maximum) GenBank collection import into browser UI, validating all records first and creating one local Photon repository per record. Browser regression tests cover success and atomic parse failure.
 - [x] Add conservative browser preflight size limits (100 records, 1 Mb total, 500 kb/record, 20k annotations), per-record size review and duplicate-name warning; these are not proof of localStorage quota sufficiency.
 - [x] Add explicit full-browser-project JSON backup and guarded restore controls, plus import rollback on failed localStorage writes. Browser regression tests included.
+- [x] Validate v1 backup project maps, working/historic DNA snapshots, annotation intervals, branch heads, parent references and acyclic history, tags, issues, reviews and wiki before replacement; preserve nested extension metadata. Unit regressions include a 12,000-commit DAG; Chromium covers corruption before confirmation, cancellation, quota failure, and reload persistence. No existing live-storage migration is performed.
 - [ ] Extend collection import beyond the supported subset and provide complete provenance review and storage-quota migration.
 - [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
 - [ ] Interoperability fixtures from independently validated real records and cross-checks with Biopython / INSDC tools.

@@ -638,27 +638,12 @@ window.PhotonEditorBridgeHost={
   if(!file)return;
   try{
    if(file.size>20_000_000)throw new RangeError('Backup exceeds the 20 MB restore limit');
-   const payload=JSON.parse(await file.text());
-   if(payload?.format!=='photon/local-project-backup/1')throw new RangeError('Unsupported backup format');
-   const next=payload.data,records=next?.repos;
-   if(!next||!records||typeof records!=='object'||Array.isArray(records)||
-      !Object.keys(records).length||Object.keys(records).length>500||
-      typeof next.cur!=='string'||!Object.hasOwn(records,next.cur))
-      throw new RangeError('Invalid local project backup');
-   for(const [id,r] of Object.entries(records)){
-    if(!r||r.id!==id||typeof r.name!=='string'||
-       !r.working||typeof r.working.seq!=='string'||
-       !['linear','circular'].includes(r.working.topology)||
-       !Array.isArray(r.working.features)||
-       typeof r.branch!=='string'||!r.branches||!r.commits||
-       !Array.isArray(r.pulls)||!Array.isArray(r.issues)||
-       !Array.isArray(r.tags)||!Array.isArray(r.wiki))
-      throw new RangeError('Invalid project entry in backup: '+id);
-   }
+   const {parseProjectBackup}=await import('./src/core/project-backup.mjs');
+   const next=parseProjectBackup(await file.text()),records=next.repos;
    if(!confirm('Restore '+Object.keys(records).length+' project(s)? This REPLACES all current browser-local Photon projects. Export a backup of your current projects first.'))return;
    // Persist before replacing in-memory data; storage failures leave the UI unchanged.
    localStorage.setItem(KEY,JSON.stringify(next));
-   load();U.sel=-1;render();
+   DB=next;U.sel=-1;render();
    flash('Restored '+Object.keys(DB.repos).length+' local Photon projects.');
   }catch(error){flash('Backup restore rejected: '+error.message);}
  };
