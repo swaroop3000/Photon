@@ -73,3 +73,12 @@ Libraries can be saved in browser local storage scoped to the active Photon repo
 The hierarchy exporter emits SBOL 3 N-Triples with reusable `Component` objects, linked `Sequence` objects, and `SubComponent` relationships for each direct placement. One component can be referenced by multiple instances. GitHub CI loads the hierarchy with **pySBOL3**, checks the nested references, and runs `Document.validate()`.
 
 **Scope:** Linear, double-stranded DNA sequence concatenation; no assembly reaction chemistry, no circular assembly, no plasmid commit/snapshot integration, and no general-purpose hierarchical RDF importer yet. The available graphical track is a simple non-destructive preview rather than a drag-and-drop circuit editor.
+
+
+## Photon 2.8 — Interactive visual circuit designer
+
+The **Builder** tab now includes an interactive, non-destructive circuit designer that operates on the existing reusable Photon part library. The interface displays the direct placements of a selected assembly as cards with 1-based sequence coordinates, orientations, and lengths. Users can drag placements to reorder them, use accessible left/right buttons, reverse orientations, insert an existing part or assembly, and remove an occurrence. After each accepted operation, the plain-text library definition and visual preview are synchronized.
+
+Edits use immutable operations that validate the entire library graph after each change. Invalid positions, missing references, circular dependency chains, and attempts to leave an empty assembly are rejected. Because references point to reusable library definitions, moving or reversing a placement does not mutate the underlying part's sequence or other instances.
+
+**Persistence and scope:** Visual changes update the in-browser library editor only. They are persisted only after the user selects **Save part library**, and they never automatically replace the working DNA, commit to the repository, or change the existing plasmid editor. The existing JSON library and hierarchical SBOL 3 N-Triples export options remain available. This visual designer is a component-placement editor, not a biochemical assembly simulator, and it does not yet offer arbitrary canvas geometry or cloud collaboration.
