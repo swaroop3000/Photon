@@ -20,7 +20,8 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 ## 3. File interoperability
 - [x] Existing conservative single-record GenBank parser rejects unsupported grammar.
 - [x] New `parseGenbankCollection` / `serializeGenbankCollection` support multiple **individually supported** records in the core API, atomically rejecting invalid records.
-- [ ] Integrate collection import choice into browser UI and repository creation flow.
+- [x] Integrate bounded (100-record maximum) GenBank collection import into browser UI, validating all records first and creating one local Photon repository per record. Browser regression tests cover success and atomic parse failure.
+- [ ] Extend collection import beyond the supported subset, and provide a fuller per-record fidelity/size review and an explicit backup/export workflow.
 - [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
 - [ ] Interoperability fixtures from independently validated real records and cross-checks with Biopython / INSDC tools.
 
