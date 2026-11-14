@@ -4,6 +4,19 @@
 
 ### Extended-session follow-up: recovery vault and migration staging
 
+- Release review follow-up fixes imported strings rendered in four HTML sinks
+  (feature legend, inspector, validation warnings and tag badges). Malicious
+  feature/tag backup regressions failed before fixes; three import/display cases
+  now cover all four sinks. Console remains explicitly privileged user JavaScript.
+- `SECURITY-REVIEW.md`, `CAPABILITY-INVENTORY.md` and `RELEASE-GATES.md` record the
+  scoped threat model, evidence by capability and explicit outstanding release gates.
+  These are not independent security/scientific/parity signoffs.
+- Combined local verification after release-review fixes: 241 core and 54 browser
+  tests passed; static build, clean Wrangler 4.162.0 dry run (60 assets) and built
+  distribution startup/edit/undo/archive smoke passed. See
+  `reports/2026-11-14/EXTENDED-SESSION.md`. Keep PR draft; active backend cutover and
+  independent release review remain unfinished.
+
 - Started at `3439858`. Added `project-archive.mjs`, `recovery-vault.mjs` and
   `recovery-tools.mjs`. The Recovery control copies exact main-project and known
   part/backbone-library source strings into a version-1 IndexedDB archive with

@@ -57,7 +57,9 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [ ] Confirm successful Cloudflare deployment in Cloudflare build logs (GitHub Actions CI is not a deployment check).
 - [x] Diagnose build `81eb4a4c-fac4-454e-938c-d2e5c73cdff7` from user-supplied actual logs: upload ran without building, so `dist/` was absent. Add Wrangler custom build hook and verify clean asset generation with Wrangler 4.162.0 `deploy --dry-run` (no upload/deployment); CI repeats this check. Hosted success remains unverified.
 - [ ] Threat model for user data / storage migration / repository sharing; localStorage is not encrypted or durable. Versioned backup validation and protected startup recovery are implemented; durable crash recovery and migration assessment remain open.
+- [x] Initial origin/storage/import/console/export threat assessment in `SECURITY-REVIEW.md`; reproduce imported feature-type markup execution in an isolated profile and escape four identified display sinks (legend, inspector, annotation warning, tag badge). Real backup-import regressions preserve strings as literal text. Independent full rendering audit and response-policy design remain open.
 - [ ] Formal original Genome Compiler feature inventory with evidence and explicit parity test per capability.
+- [x] Add independent Photon capability inventory with per-category software evidence and open acceptance work. Historical Genome Compiler equivalence is explicitly unassessed; sourced original requirements and per-claim parity acceptance remain open. `RELEASE-GATES.md` separates candidate review, main merge and production approval.
 
 ## Developer commands
 - `npm test` — core unit suite.
@@ -74,3 +76,8 @@ See `reports/2026-11-14/VALIDATION.md` and its adjacent JSON reports for local
 results: 225 core and 35 browser tests passed; build, Wrangler clean dry run,
 Primer3, pySBOL3 and 68 Biopython assertions passed. 100 kb/1 Mb/10 Mb diagnostic
 profiles completed. Remote checks for the new head must be checked separately.
+
+Extended-session follow-up: 241 core and 54 browser tests passed, including real
+IndexedDB atomicity/restart/retention and imported-markup safety cases. Static build,
+60-asset clean Wrangler dry run and built-distribution edit/undo/archive smoke passed.
+See `reports/2026-11-14/EXTENDED-SESSION.md`; these are bounded software checks.
