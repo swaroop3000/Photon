@@ -1,10 +1,14 @@
 # Photon 1.0 — modular DNA sequence engine (additive patch)
 
-This patch contains *new files only* and does not modify the existing `index.html` prototype. The application UI stays exactly as it was. The new ES module is not yet wired into the UI; that migration is a separate, reviewable change.
+The core is integrated with the existing `index.html` interface through
+`src/ui/editor-bridge.mjs` on HTTP(S). Apply/Undo/Redo use full construct snapshots;
+the original UI remains in place. See `CODEX_HANDOFF.md` and
+`ENGINEERING-REVIEW.md` for current verified scope and outstanding work.
 
 ## Add to repository
 
-Copy the contents of this patch directory into the repository root, keeping the folder paths. Run `npm test` with Node.js 20+.
+Run `npm test` and `npm run build` with Node.js 20+. Serve over HTTP, for example
+`python3 -m http.server 8765`; module-based editing is unavailable on `file://`.
 
 ## Module API
 
@@ -19,7 +23,18 @@ Coordinates are zero-based and half-open. Strand is +1 or -1. DNA input is valid
 
 ## Scope limits
 
-This is a scientific *foundation*, not a certified clinical engine. The motif finder does not model cut offsets, methylation, star activity, or ambiguous-site probabilities. Translation uses the standard nuclear genetic code, not mitochondrial or organism-specific codes. No circular wraparound feature edits or multi-segment features yet. FASTA parser only, not GenBank/SBOL. No UI wiring, database, or cloud functionality is claimed.
+This is a scientific *foundation*, not a certified clinical engine. The motif finder does not model cut offsets, methylation, star activity, or ambiguous-site probabilities. Translation uses the standard nuclear genetic code, not mitochondrial or organism-specific codes.
+
+Separate modules implement restriction cuts, supported GenBank/SBOL subsets and
+conservative circular-gap edits; their contracts appear in `FORMAT-SUPPORT.md`.
+Full INSDC compound features and broad scientific validation remain open. Projects
+use browser-local storage with explicit backup/restore, not remote Git persistence.
+
+`applyExplicitEdits` in `photon-adapter.mjs` accepts original-coordinate edit
+batches. Non-wrapped features use `editSequenceBatch` to normalize and concatenate
+the genome once; annotation mapping still costs O(features × edits). Wrapped
+features use the existing conservative gap policy. Run
+`node scripts/benchmark-edits.mjs 1000000 100` for an observational comparison.
 
 ## Suggested PR title
 

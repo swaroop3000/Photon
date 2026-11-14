@@ -61,3 +61,10 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - `python -m http.server 8765` — serve local UI through HTTP for ES module support.
 
 **Release decision:** Keep draft PR open and do not merge solely because CI is green. No claim of laboratory-grade, clinical, or full Genome Compiler feature parity.
+
+## Takeover verification record
+
+See `reports/2026-11-14/VALIDATION.md` and its adjacent JSON reports for local
+results: 225 core and 35 browser tests passed; build, Wrangler clean dry run,
+Primer3, pySBOL3 and 68 Biopython assertions passed. 100 kb/1 Mb/10 Mb diagnostic
+profiles completed. Remote checks for the new head must be checked separately.

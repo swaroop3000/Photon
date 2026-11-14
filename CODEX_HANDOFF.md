@@ -1,5 +1,27 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Takeover milestones (latest session)
+
+- Continued from verified remote HEAD `c5af07f0`; protected `main` and retained PR #1 as draft.
+- Actual Cloudflare log supplied by user: `versions upload` ran without building,
+  so `dist/` was missing. Added Wrangler custom build hook and clean-build dry-run CI.
+  Local verification does not establish a successful hosted upload; no production deployment executed.
+- Added strict v1 backup validation before persistence, including snapshots, annotation
+  intervals, branch/parent/tag references and cycle checks. Chromium covers corruption,
+  cancellation, quota failure and reload persistence. Existing live-storage loading and
+  legacy ignored-save failures still need recovery/migration work.
+- Added GenBank wrapped prose/translation and quote escaping; fixed LOCUS columns after
+  Biopython exposed topology loss. New pinned Biopython workflow checks synthetic roundtrips,
+  all seven core enzymes, standard translation, reverse complement and prepared overlaps.
+- Optimized explicit non-wrapped genome batches to concatenate sequence once; preserves
+  sequential mapping in 300 seeded cases and a 10 Mb/1,000-edit regression. Annotation
+  mapping remains O(features × edits); no browser virtualization claim.
+- Local verification: 225 core tests, 35 browser tests, build, clean Wrangler dry run,
+  actual Primer3, three pySBOL3 fixtures and 68 Biopython assertions passed. 100 kb/1 Mb/10 Mb
+  diagnostics completed. Details and machine-readable reports: `reports/2026-11-14/`.
+- The historical sections below describe the pre-takeover state; use this section,
+  `ENGINEERING-REVIEW.md`, and current branch CI for subsequent work.
+
 ## 0. Canonical location / status
 
 - GitHub: https://github.com/swaroop3000/Photon

@@ -1,0 +1,10 @@
+{
+  "schema": "photon-biopython-validation-v1",
+  "biopython": "1.86",
+  "fixture_sha256": "5c41f9351de310fbd4587e3a9dcd7ee46afbda36d6cc8760111f13b54f25e869",
+  "seed": 3000,
+  "records": 2,
+  "enzymes": 7,
+  "assertions": 68,
+  "scope": "Synthetic supported-subset differential checks; no wet-lab validation"
+}
