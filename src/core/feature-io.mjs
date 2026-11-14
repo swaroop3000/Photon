@@ -26,9 +26,9 @@ export function parseGenbankFeatureLocation(value,length,{circular=false}={}){
  const reverse=input.startsWith('complement(')&&input.endsWith(')');
  const inner=reverse?input.slice(11,-1):input;
  let start,end;
- const direct=inner.match(/^(\d+)\.\.(\d+)$/);
+ const direct=inner.match(/^(\d+)(?:\.\.(\d+))?$/);
  const joined=inner.match(/^join\((\d+)\.\.(\d+),1\.\.(\d+)\)$/);
- if(direct){start=Number(direct[1]);end=Number(direct[2]);}
+ if(direct){start=Number(direct[1]);end=Number(direct[2]??direct[1]);}
  else if(joined&&circular&&Number(joined[2])===length){
    start=Number(joined[1]);end=Number(joined[3]);
    if(start<=end)throw new RangeError('Circular join must cross origin');
@@ -51,7 +51,7 @@ export function serializeGenbank(working){
    if(!qualifiers||typeof qualifiers!=='object'||Array.isArray(qualifiers))
      throw new RangeError('Invalid feature qualifiers');
    for(const [key,value] of Object.entries(qualifiers).sort(([a],[b])=>a.localeCompare(b))){
-     if(!['gene','product','note'].includes(key)||typeof value!=='string')
+     if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)||typeof value!=='string')
        throw new RangeError('Unsupported GenBank qualifier: '+key);
      if(/[\r\n"]/.test(value))throw new RangeError('Unsupported quote or newline in GenBank qualifier');
      lines.push('                     /'+key+'="'+value+'"');
@@ -65,37 +65,72 @@ export function serializeGenbank(working){
 /** Parses the explicit GenBank subset above. Unsupported location grammar is
  * rejected rather than silently losing feature relationships.
  */
+/** Photon 2.4: conservative external GenBank flat-file parser.
+ * Supported: one LOCUS/ORIGIN record, single positions, simple ranges,
+ * origin-spanning two-part joins, complement, and single-line quoted qualifiers.
+ * Remote, fuzzy, order, multi-exon joins, valueless/repeated or multiline
+ * qualifiers are rejected because the current feature model cannot retain them.
+ */
 export function parseGenbank(text){
  if(typeof text!=='string')throw new TypeError('GenBank must be text');
- const locus=text.match(/^LOCUS\s+(\S+).*?(?:\b(circular|linear)\b)/im);
- const name=locus?.[1]||'Imported';
- const topology=locus?.[2]?.toLowerCase()==='circular'?'circular':'linear';
- const origin=text.search(/^ORIGIN\s*$/mi);
+ const locus=text.match(/^LOCUS\s+(\S+)\s+(\d+)\s+bp\b([^\r\n]*)/mi);
+ if(!locus)throw new RangeError('GenBank LOCUS with sequence length required');
+ const name=locus[1],declared=Number(locus[2]);
+ const topology=/\bcircular\b/i.test(locus[3])?'circular':'linear';
+ const origin=text.search(/^ORIGIN(?:\s.*)?$/mi);
  if(origin<0)throw new RangeError('Missing GenBank ORIGIN section');
- const raw=text.slice(origin).replace(/^ORIGIN\s*$/mi,'').split(/^\/\//m)[0];
- const seq=normalizeDNA(raw.replace(/[\s\d]/g,''));
+ const originBody=text.slice(origin).replace(/^ORIGIN[^\r\n]*(?:\r?\n)?/i,'').split(/^\/\//m)[0];
+ const seqLines=originBody.split(/\r?\n/).filter(l=>l.trim());
+ const seq=normalizeDNA(seqLines.map(l=>{
+   const match=l.match(/^\s*\d+\s+([A-Za-z\s]+)$/);
+   if(!match)throw new RangeError('Invalid GenBank ORIGIN line');
+   return match[1].replace(/\s+/g,'');
+ }).join(''),{allowAmbiguous:false});
+ if(seq.length!==declared)throw new RangeError('LOCUS length differs from ORIGIN sequence');
  if(!seq.length)throw new RangeError('Empty GenBank sequence');
  const features=[];
- const section=text.match(/^FEATURES[^\n]*\n([\s\S]*?)(?=^ORIGIN\s*$)/mi)?.[1]||'';
- let active=null;
- for(const line of section.split(/\r?\n/)){
-   const header=line.match(/^ {5}(\S+)\s+(.+)\s*$/);
-   if(header){
-     if(active)features.push(active);
-     const loc=parseGenbankFeatureLocation(header[2],seq.length,{circular:topology==='circular'});
-     active={name:header[1],type:header[1],...loc};
-   }else if(active){
-     const label=line.match(/^\s+\/label="([^"]*)"/);
-     if(label)active.name=label[1];
-     else {
-       const qualifier=line.match(/^\s+\/(gene|product|note)="([^"]*)"/);
-       if(qualifier){
-         active.qualifiers??={};
-         active.qualifiers[qualifier[1]]=qualifier[2];
-       }
-     }
+ const section=text.slice(0,origin).match(/^FEATURES[^\r\n]*\r?\n([\s\S]*)$/mi)?.[1]??'';
+ let pending=null;
+ function finalize(){
+   if(!pending)return;
+   const coords=parseGenbankFeatureLocation(pending.location,seq.length,{circular:topology==='circular'});
+   if(pending.key!=='source'){
+     const qualifiers=pending.qualifiers;
+     const label=pending.label??qualifiers.gene??qualifiers.product??pending.key;
+     const feature={name:label,type:pending.key,...coords};
+     if(Object.keys(qualifiers).length)feature.qualifiers=qualifiers;
+     features.push(feature);
    }
+   pending=null;
  }
- if(active)features.push(active);
+ for(const line of section.split(/\r?\n/)){
+   if(!line.trim())continue;
+   const header=line.match(/^ {5}(\S+)\s+(.+?)\s*$/);
+   if(header){
+     finalize();
+     pending={key:header[1],location:header[2],qualifiers:{},label:null,qualifierMode:false};
+     continue;
+   }
+   if(!pending)throw new RangeError('Unexpected feature-table line');
+   if(!/^ {21}/.test(line))throw new RangeError('Unsupported GenBank feature-table indentation');
+   const tail=line.slice(21).trim();
+   if(!tail)continue;
+   if(tail.startsWith('/')){
+     pending.qualifierMode=true;
+     const m=tail.match(/^\/([A-Za-z][A-Za-z0-9_]*)="([^"]*)"$/);
+     if(!m)throw new RangeError('Unsupported GenBank qualifier syntax: '+tail.slice(0,50));
+     const [,key,value]=m;
+     if(key==='label'){
+       if(pending.label!==null)throw new RangeError('Duplicate label qualifier');
+       pending.label=value;
+     }else{
+       if(Object.hasOwn(pending.qualifiers,key))throw new RangeError('Repeated GenBank qualifier not representable: '+key);
+       pending.qualifiers[key]=value;
+     }
+   }else if(!pending.qualifierMode){
+     pending.location+=tail;
+   }else throw new RangeError('Multiline GenBank qualifiers are not yet supported');
+ }
+ finalize();
  return {name,seq,topology,features};
 }
