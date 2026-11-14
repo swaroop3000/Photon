@@ -38,7 +38,7 @@ test('invalid backup is refused without changing local projects',async()=>{
    name:'invalid.json',mimeType:'application/json',
    buffer:Buffer.from('{"format":"photon/local-project-backup/1","data":{"repos":{}}}')
   });
-  await page.waitForFunction(()=>document.querySelector('.toast')?.textContent?.includes('Backup restore rejected')||document.body.innerText.includes('Backup restore rejected'));
+  await page.waitForFunction(()=>document.title.includes('Backup restore rejected'));
   assert.equal(await page.evaluate(()=>JSON.stringify(DB)),before);
  }finally{await browser.close();}
 });
