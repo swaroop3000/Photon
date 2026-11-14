@@ -32,3 +32,20 @@ SBOL 3 is based on the RDF data model and common encodings include RDF/XML, JSON
 - `npm test` runs DNA/annotation unit tests and reference-style GenBank fixtures.
 - The GitHub browser smoke workflow launches Chromium and tests actual file import, non-mutating error rejection, and prior DNA editor functions.
 - These automated checks do not establish broad GenBank/SBOL interoperability. Additional external roundtrips with validated reference software remain necessary.
+
+
+## SBOL 3 RDF / N-Triples — Photon 2.5
+
+Photon now provides a **separate SBOL 3 N-Triples (.nt)** import and export path. This uses standard SBOL 3 RDF classes and properties for a minimal DNA design graph:
+- `sbol:Component` with DNA `sbol:type`, linear/circular Sequence Ontology role, and `sbol:hasSequence`.
+- `sbol:Sequence` with IUPAC DNA encoding and `sbol:elements`.
+- `sbol:SequenceFeature` annotations with linked `sbol:Range` locations.
+- Ordered ranges for supported circular origin-spanning annotations, with explicit strand orientation and sequence references.
+- `sbol:hasNamespace` and consistent `sbol:displayId` for top-level objects.
+- Photon names, feature types, and string qualifiers may also use Photon-specific extension predicates (`https://photon.app/ns/1#`).
+
+**Independent validation:** GitHub Actions generates an example N-Triples file, reads it using pySBOL3, and runs `Document.validate()`. Node unit tests and Chromium browser tests check internal round-trip preservation and the real import review workflow.
+
+**Scope limitations:** Photon is not a general RDF parser. The import path supports its defined single-component DNA graph subset in N-Triples, not arbitrary SBOL 3 constructs, multiple components, externally defined hierarchies, associations, combinatorial designs, arbitrary RDF encodings (Turtle, JSON-LD, RDF/XML), or unsupported feature-location relationships. Non-Photon extension metadata and external RDF graphs may not round-trip. Full SBOL 3 compatibility remains a separate goal.
+
+The older **Photon XML (SBOL-like)** format remains available and is intentionally labeled as *not SBOL 2*. It should not be confused with the new SBOL 3 N-Triples option.
