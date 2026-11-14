@@ -2,14 +2,14 @@
 
 **Open, local-first DNA design with built-in version control.** Design plasmids and constructs visually, track every change like Git, and keep your files — no account, no lock-in, works offline.
 
-Photon is a single self-contained HTML file. There is no build step and no server: open it and it runs.
+Photon's current UI is in `index.html`; scientific modules live in `src/`. There is no build step, but sequence editing requires module loading via HTTP(S). Run a local HTTP server for fully offline work.
 
 ## Run it
 
-- **Locally:** download `index.html` and open it in any modern browser.
+- **Locally (recommended):** clone/download the full repository, run `python -m http.server 8765` from its root and open `http://localhost:8765`. Python's built-in server runs offline once the files are installed. Opening `index.html` directly with `file://` displays the legacy UI, but Apply/Undo/Redo are intentionally blocked because module loading can fail and the old sequence-only fallback could corrupt annotations.
 - **On the web:** enable GitHub Pages (Settings → Pages → deploy from `main` / root) and open the published URL.
 
-Your work is saved in the browser's local storage. Export any design as FASTA, GenBank, SBOL, or a full `.photon.json` repo bundle.
+Your work is saved in the browser's local storage for the chosen origin (for example `http://localhost:8765`); changing origin will not automatically migrate stored projects. Export a `.photon.json` backup before changing how you open Photon. Export any design as FASTA, GenBank, SBOL, or a full `.photon.json` repo bundle.
 
 ## What it does
 
