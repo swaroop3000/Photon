@@ -448,3 +448,81 @@ test('circular backbone review refuses insertion that splits an existing feature
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
  }finally{await browser.close();}
 });
+
+
+test('Photon 3.1 selects saved backbone, previews junctions and applies to unrelated working construct',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const w=window.PhotonEditorBridgeHost.working();
+   w.name='BackboneA';w.seq='AACCGGTTAACC';w.topology='circular';
+   w.features=[{name:'ori',start:1,end:3,strand:1,type:'rep_origin'}];
+   window.PhotonEditorBridgeHost.render();
+  });
+  await page.locator('.tab[data-tool="builder"]').click();
+  const lib=page.locator('#photonBackboneLibraryV31');
+  await lib.waitFor();
+  await lib.locator('#photonBackboneSaveId').fill('savedBase');
+  await lib.getByRole('button',{name:'Save current backbone'}).click();
+  assert.match(await lib.locator('#photonBackboneLibraryStatus').innerText(),/Saved circular backbone/);
+  const selected=lib.locator('#photonBackboneSource');
+  await selected.selectOption('savedBase');
+  // Deliberately change the working construct. Saved backbones remain independent.
+  await page.evaluate(()=>{
+    const w=window.PhotonEditorBridgeHost.working();
+    w.name='DifferentLinear';w.seq='ATGC';w.topology='linear';w.features=[];
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  const panel=page.locator('#photonCircularBackboneV30');
+  await panel.locator('#photonBackboneBoundary').fill('6');
+  await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  const report=await panel.locator('#photonBackboneReview').innerText();
+  assert.match(report,/Selected backbone: BackboneA/);
+  assert.match(report,/Current working plasmid: DifferentLinear/);
+  assert.match(report,/Junctions \(left \| right, top strand\)/);
+  assert.match(report,/Curated restriction sites before/);
+  await panel.locator('#photonBackboneConfirm').check();
+  await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).click();
+  const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(after.name,'BackboneA');
+  assert.equal(after.topology,'circular');
+  assert.equal(after.seq.length,54);
+  assert.equal(after.features[0].name,'ori');
+  assert.equal(after.features[0].start,1);
+  await page.locator('.tab[data-tool="features"]').click();
+  await page.locator('#ub').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  await page.locator('#rb').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+
+test('Photon 3.1 invalidates review when selected backbone changes',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+    if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+    const w=window.PhotonEditorBridgeHost.working();
+    w.name='Base';w.seq='AACCGGTTAACC';w.topology='circular';w.features=[];
+    window.PhotonEditorBridgeHost.render();
+  });
+  await page.locator('.tab[data-tool="builder"]').click();
+  await page.locator('#photonBackboneSaveId').fill('saved');
+  await page.getByRole('button',{name:'Save current backbone'}).click();
+  const panel=page.locator('#photonCircularBackboneV30');
+  await panel.locator('#photonBackboneBoundary').fill('5');
+  await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  assert.equal(await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).isVisible(),true);
+  await panel.locator('#photonBackboneSource').selectOption('current');
+  await panel.locator('#photonBackboneSource').selectOption('saved');
+  assert.equal(await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).isVisible(),false);
+  assert.match(await panel.locator('#photonBackboneReview').innerText(),/Review again/);
+ }finally{await browser.close();}
+});
