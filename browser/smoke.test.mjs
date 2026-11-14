@@ -785,3 +785,19 @@ test('disjoint substitutions preserve intervening features in the browser editor
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+test('missing DNA module fails closed instead of running unsafe sequence-only fallback',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  await page.route('**/src/ui/editor-bridge.mjs',route=>route.abort());
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
+  const original=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(await page.evaluate(()=>Boolean(window.PhotonEditorBridgeReady)),false);
+  await page.locator('#se').fill(original.seq+'A');
+  await page.locator('#ap').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),original);
+ }finally{await browser.close();}
+});
