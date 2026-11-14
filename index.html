@@ -129,7 +129,7 @@ function seqDiff(o,n){if(o===n)return null;let p=0;while(p<o.length&&p<n.length&
 const KEY='locusPro_v1';let DB;
 function load(){try{DB=JSON.parse(localStorage.getItem(KEY))||null;}catch(e){DB=null;}if(!DB||!DB.repos||!Object.keys(DB.repos).length){DB=null;seed();}Object.values(DB.repos).forEach(migrate);}
 function migrate(r){r.pulls=r.pulls||[];r.issues=r.issues||[];r.tags=r.tags||[];r.wiki=r.wiki||[{title:'Home',body:'Welcome to the '+r.name+' wiki.'}];if(r.protected===undefined)r.protected=false;r.pulls.forEach(p=>{p.reviews=p.reviews||[];});r.issues.forEach(i=>{i.comments=i.comments||[];i.labels=i.labels||[];});}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));return true;}catch(e){console.error('Photon local save failed:',e);return false;}}
 const uid=()=>Math.random().toString(36).slice(2,9);
 function snap(w){return{name:w.name,seq:w.seq,topology:w.topology,features:JSON.parse(JSON.stringify(w.features))};}
 function seed(){const s=SAMPLE();autoAnn(s);annORFs(s);const rid=uid(),cid=uid();DB={repos:{},cur:rid,tab:'code'};DB.repos[rid]={id:rid,name:s.name,desc:'Demo plasmid.',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Initial import',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+s.name+'\n\nOpen, versioned DNA design. Edit → commit → branch → PR → merge.'}],readme:'# '+s.name+'\n\nAn open, versioned DNA design. Every change is tracked like Git.'};save();}
@@ -511,17 +511,17 @@ if((text.match(/^LOCUS\s/gm)||[]).length>1){
  const totalBp=preflight.totalBases,featureCount=preflight.totalFeatures;
  modal('<h2 class="ph">GenBank collection import</h2><div class="sub">All records passed the supported GenBank subset parser. Import each as a separate local repository; nothing will be merged into the current construct.</div><div class="li">'+records.length+' records · '+totalBp+' bp · '+featureCount+' feature(s)</div><div class="li">'+preflight.details.slice(0,10).map(d=>esc(d.name)+' · '+d.bases+' bp · '+d.features+' feature(s)').join('<br>')+(records.length>10?'<br>… +'+(records.length-10)+' more records':'')+'</div>'+(preflight.duplicateNames.length?'<div class="li" style="color:var(--partial)">Duplicate record names: '+esc(preflight.duplicateNames.join(', '))+'; local repositories keep distinct IDs.</div>':'')+'<div class="li" style="color:var(--partial)">Unsupported INSDC grammar is rejected. Imported repositories are local browser data, not GitHub repositories; back them up with Photon JSON exports.</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="impCollection">Create '+records.length+' repositories</button><button class="btn" onclick="closeModal()">Cancel</button></div>');
  document.getElementById('impCollection').onclick=()=>{
-  const previous=DB.cur,created=[];
+  const previous=DB.cur,previousTab=DB.tab,created=[];
   try{
    for(const d of records){
     const rid=uid(),cid=uid(),s={name:d.name,seq:d.seq,topology:d.topology,features:d.features};
     DB.repos[rid]={id:rid,name:d.name,desc:'Imported GenBank collection',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Import GenBank record',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+d.name}],readme:'# '+d.name};
     created.push(rid);
    }
-   DB.cur=created[0];DB.tab='code';save();
+   DB.cur=created[0];DB.tab='code';if(!save())throw new Error('Browser storage is full or inaccessible; export a Photon backup and free browser storage before importing.');
   }catch(error){
    for(const rid of created)delete DB.repos[rid];
-   DB.cur=previous;
+   DB.cur=previous;DB.tab=previousTab;
    flash('Collection import failed: '+error.message);
    return;
   }
