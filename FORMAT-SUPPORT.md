@@ -82,3 +82,14 @@ The **Builder** tab now includes an interactive, non-destructive circuit designe
 Edits use immutable operations that validate the entire library graph after each change. Invalid positions, missing references, circular dependency chains, and attempts to leave an empty assembly are rejected. Because references point to reusable library definitions, moving or reversing a placement does not mutate the underlying part's sequence or other instances.
 
 **Persistence and scope:** Visual changes update the in-browser library editor only. They are persisted only after the user selects **Save part library**, and they never automatically replace the working DNA, commit to the repository, or change the existing plasmid editor. The existing JSON library and hierarchical SBOL 3 N-Triples export options remain available. This visual designer is a component-placement editor, not a biochemical assembly simulator, and it does not yet offer arbitrary canvas geometry or cloud collaboration.
+
+
+## Photon 2.9 — Circuit-to-plasmid application
+
+The Builder now offers an explicit **Review plasmid replacement** and **Apply reviewed circuit** workflow. The operation resolves a validated hierarchy into a **linear DNA construct** with a sequence, a construct name, and one 1-based inclusive `misc_feature` annotation per resolved leaf placement. Each annotation records its strand and a string note documenting its reusable-library source path.
+
+The review compares original and replacement construct lengths and annotation counts. Applying requires a checked acknowledgment and refuses stale reviews if the library text, selected root assembly, working construct or repository/branch identity has changed since review. The in-memory DNA editor stores the full prior construct snapshot (name, topology, sequence and features), allowing the existing **Undo** and **Redo** controls to recover the original plasmid without losing its annotations or topology.
+
+This is a **working construct replacement**, *not* a Git commit. Users must explicitly select the existing **Commit** command to create a versioned repository snapshot; the operation never automatically commits or merges.
+
+**Important limitations:** Converted assemblies are linear; no plasmid backbone is automatically added, no circularization is inferred, and no laboratory assembly or restriction-site success is predicted. Existing features are replaced with component-placement annotations rather than automatically transferred. Although feature names, orientations, and source paths are retained, specialized feature ontology classes are not inferred from part names.
