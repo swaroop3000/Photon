@@ -4,7 +4,7 @@ import {mismatchBindingSites,mismatchPrimerPairScreen} from '../src/core/primer-
 
 test('exact forward and reverse binding report expected coordinates',()=>{
   assert.deepEqual(mismatchBindingSites('ACGTTT','ACG',{maxMismatches:0}).map(x=>x.start),[0]);
-  assert.deepEqual(mismatchBindingSites('ACGTTT','AAC',{strand:'reverse',maxMismatches:0}).map(x=>x.start),[3]);
+  assert.deepEqual(mismatchBindingSites('ACGTTT','AAC',{strand:'reverse',maxMismatches:0}).map(x=>x.start),[2]);
 });
 test('single internal mismatch allowed with exact three-prime last two bases',()=>{
   const hits=mismatchBindingSites('ATGCC','ACGCC',{maxMismatches:1,protected3Prime:2});
