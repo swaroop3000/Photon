@@ -401,7 +401,7 @@ function renderLabs(v){const r=repo(),w=W();const lab=DB._lab||'crispr';const it
 TABS.push(['actions','Actions'],['labs','Labs'],['remote','Remote']);
 const _render=render;
 render=function(){if(DB.tab==='actions'||DB.tab==='remote'||DB.tab==='labs'){renderChrome();renderNav();const v=document.getElementById('view');({actions:renderActions,remote:renderRemote,labs:renderLabs}[DB.tab])(v);return;}_render();augment();};
-const _renderTool=renderTool;renderTool=function(){_renderTool();augmentTool();window.PhotonPlasmidTools?.render?.();window.PhotonCloningTools?.render?.();window.PhotonGibsonTools?.render?.();window.PhotonGoldenGateTools?.render?.();window.PhotonPrimerTools?.render?.();window.PhotonPrimerDesigner?.render?.();};
+const _renderTool=renderTool;renderTool=function(){_renderTool();augmentTool();window.PhotonPlasmidTools?.render?.();window.PhotonCloningTools?.render?.();window.PhotonGibsonTools?.render?.();window.PhotonGoldenGateTools?.render?.();window.PhotonPrimerTools?.render?.();window.PhotonPrimerDesigner?.render?.();window.PhotonMismatchTools?.render?.();};
 (function(){const fi=document.getElementById('fileIn');const c=fi.cloneNode(true);fi.parentNode.replaceChild(c,fi);c.onchange=e=>{const f=e.target.files[0];if(!f)return;if(/\.dna$/i.test(f.name)){modal('<h2 class="ph">SnapGene .dna import <span class="lblchip">mock</span></h2><div class="sub">Binary .dna parsing needs a dedicated decoder. This placeholder shows where it would load.</div><button class="btn primary" onclick="closeModal()">OK</button>');e.target.value='';return;}const rd=new FileReader();rd.onload=()=>{const d=detect(String(rd.result));if(d._bundle)importBundle(d._bundle);else{const w=W();w.name=d.name;w.seq=d.seq;w.topology=d.topology;w.features=d.features;autoAnn(w);U.sel=-1;save();flash('Imported '+f.name);render();}};rd.readAsText(f);e.target.value='';};})();
 function openTutorial(){const sec=(title,rows)=>`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:14px;font-weight:600;padding:6px 0">${title}</summary><div style="padding:2px 0 8px">${rows.map(r=>`<div style="display:flex;gap:8px;margin:5px 0;font-size:13px"><b style="min-width:130px;color:var(--aink)">${r[0]}</b><span style="color:var(--muted)">${r[1]}</span></div>`).join('')}</div></details>`;
  modal(`<div style="max-width:100%"><h2 class="ph">Photon tutorial</h2><div class="sub">What every feature does. Click a section to expand. Legend: <b>real</b> = works fully · <span class="lblchip">mock</span> = preview, needs a backend.</div>
@@ -550,5 +550,6 @@ window.PhotonEditorBridgeHost={
 <script type="module" src="./src/ui/primer-tools.mjs"></script>
 <script type="module" src="./src/ui/primer-design-tools.mjs"></script>
 <script type="module" src="./src/ui/primer-map.mjs"></script>
+<script type="module" src="./src/ui/primer-mismatch-tools.mjs"></script>
 </body>
 </html>
