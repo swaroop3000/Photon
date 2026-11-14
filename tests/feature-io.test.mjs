@@ -71,7 +71,7 @@ const externalGenbank=[
  'ORIGIN',
  '        1 aaccggttaacc ggttaaccggtt',
  '//'
-].join('\\n');
+].join('\n');
 
 test('external GenBank-style record imports source, wrapped, reverse and single-base locations',()=>{
  const parsed=parseGenbank(externalGenbank);
@@ -97,6 +97,6 @@ test('external GenBank malformed ORIGIN and mismatched declared length fail',()=
  assert.throws(()=>parseGenbank(externalGenbank.replace('aaccggttaacc','aacxggttaacc')),/Invalid DNA base/);
 });
 test('external GenBank multiline qualifiers are rejected rather than silently truncated',()=>{
- const altered=externalGenbank.replace('/product="synthetic peptide"','/product="synthetic\\n                     peptide"');
+ const altered=externalGenbank.replace('/product="synthetic peptide"','/product="synthetic\n                     peptide"');
  assert.throws(()=>parseGenbank(altered),/Unsupported GenBank qualifier|Multiline/);
 });
