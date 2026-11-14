@@ -29,3 +29,11 @@ test('invalid topology and feature coordinates are rejected',()=>{
  assert.throws(()=>serializeSbol3NTriples({...w,topology:'weird'}),/topology/);
  assert.throws(()=>serializeSbol3NTriples({...w,topology:'linear'}),/circular DNA/);
 });
+
+
+test('RDF graph preserves feature order for more than nine annotations',()=>{
+ const input={name:'ManyFeatures',seq:'A'.repeat(30),topology:'linear',
+  features:Array.from({length:12},(_,i)=>({name:'feature'+i,type:'misc',start:i+1,end:i+1,strand:1}))};
+ const out=parseSbol3NTriples(serializeSbol3NTriples(input));
+ assert.deepEqual(out.features,input.features);
+});
