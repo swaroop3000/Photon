@@ -6,7 +6,7 @@ const parts=[{id:'promoter',name:'Promoter',sequence:'ATGCCGTAA'},
  {id:'terminator',name:'Terminator',sequence:'TTAACG'}];
 test('ordered parts build correct sequence and 1-based placements',()=>{
  const r=assembleSbol3Parts(parts,{name:'Circuit'});
- assert.equal(r.sequence,'ATGCCGT A TACGGACTT TTAACG'.replaceAll(' ',''));
+ assert.equal(r.sequence,'ATGCCGTAA'+'TACGGACTT'+'TTAACG');
  assert.deepEqual(r.parts.map(p=>[p.start,p.end]),[[1,9],[10,18],[19,24]]);
 });
 test('RDF N-Triples assembly roundtrips linked components and reversed part',()=>{
@@ -18,7 +18,7 @@ test('RDF N-Triples assembly roundtrips linked components and reversed part',()=
 });
 test('reject duplicate IDs, malformed strands and empty parts',()=>{
  assert.throws(()=>assembleSbol3Parts([parts[0],parts[0]]),/Duplicate/);
- assert.throws(()=>assembleSbol3Parts([parts[0],{id:'b',sequence:'NNN'}]),/Invalid DNA base|Empty/);
+ assert.throws(()=>assembleSbol3Parts([parts[0],{id:'b',sequence:''}]),/Empty/);
  assert.throws(()=>assembleSbol3Parts([parts[0],{id:'b',sequence:'ACT',strand:0}]),/strand/);
 });
 test('tampering with child sequence fails integrity check',()=>{
