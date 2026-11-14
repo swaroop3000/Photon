@@ -32,13 +32,20 @@ export function applySequenceRevision(working, proposedSequence) {
   const before = normalizeDNA(working.seq);
   const after = normalizeDNA(proposedSequence);
   if (!Array.isArray(working.features)) throw new TypeError('features must be an array');
+  // Existing wrapped features are valid on circles, but the current linear
+  // edit liftover cannot safely relocate them after sequence changes.
+  const hasWrapped = working.features.some(f => f.start > f.end);
+  if(hasWrapped) {
+    if(working.topology!=='circular') throw new RangeError('Origin-spanning features require circular DNA');
+    if(before!==after) throw new RangeError('Sequence edits with origin-spanning features require reannotation; no bases were changed');
+    return {working:cloneState(working),changed:false,affectedFeatures:[],edit:null};
+  }
   const coreFeatures = working.features.map(f => {
     assertLegacyFeature(f, before.length);
     return { ...f, start: f.start - 1 };
   });
   const prev = cloneState(working);
   if (before === after) return { working: prev, changed: false, affectedFeatures: [], edit: null };
-  if (working.features.some(f => f.start > f.end)) throw new RangeError('Sequence edits with origin-spanning features require reannotation; no bases were changed');
   const edit = boundsForReplacement(before, after);
   const result = editSequence(before, coreFeatures, edit);
   const features = result.features.map(f => {
