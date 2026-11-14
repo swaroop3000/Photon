@@ -22,3 +22,10 @@ jobs:
           test ! -e dist/tests
           test ! -e dist/.git
           test ! -e dist/ENGINEERING-REVIEW.md
+      - name: Verify Wrangler rebuilds missing assets without uploading
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          rm -rf dist
+          npx --yes wrangler@4.162.0 deploy --dry-run
+          test -s dist/index.html

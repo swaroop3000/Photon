@@ -43,6 +43,7 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [ ] External reproducibility assessment, peer technical review, formal risk assessment and reference accuracy thresholds.
 - [x] Add minimal static release output, a Wrangler configuration for the 'photon' Worker, deployment guide and static-build CI.
 - [ ] Confirm successful Cloudflare deployment in Cloudflare build logs (GitHub Actions CI is not a deployment check).
+- [x] Diagnose build `81eb4a4c-fac4-454e-938c-d2e5c73cdff7` from user-supplied actual logs: upload ran without building, so `dist/` was absent. Add Wrangler custom build hook and verify clean asset generation with Wrangler 4.162.0 `deploy --dry-run` (no upload/deployment); CI repeats this check. Hosted success remains unverified.
 - [ ] Threat model for user data / localStorage migration / repository sharing; localStorage is not encrypted or durable. Restore validation needs a full versioned schema and corruption recovery assessment.
 - [ ] Formal original Genome Compiler feature inventory with evidence and explicit parity test per capability.
 
