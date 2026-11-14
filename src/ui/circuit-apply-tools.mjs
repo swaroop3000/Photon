@@ -21,14 +21,14 @@ export function renderCircuitApply(){
  const acknowledge=document.createElement('label');acknowledge.style.cssText='display:flex;gap:8px;align-items:center;margin:10px 0';
  const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.id='photonCircuitApplyConfirm';
  const agree=document.createElement('span');agree.textContent='I understand this will replace the working plasmid sequence and annotations.';
- acknowledge.append(checkbox,agree);acknowledge.hidden=true;
+ acknowledge.append(checkbox,agree);acknowledge.hidden=true;acknowledge.style.display='none';
  const apply=document.createElement('button');apply.className='btn sm primary';apply.type='button';
- apply.textContent='Apply reviewed circuit';apply.disabled=true;apply.hidden=true;
+ apply.textContent='Apply reviewed circuit';apply.disabled=true;apply.hidden=true;apply.style.display='none';
  let pending=null;
  const signature=w=>JSON.stringify([w.name,w.seq,w.topology,w.features]);
  function invalidate(){
    pending=null;checkbox.checked=false;acknowledge.hidden=true;
-   apply.hidden=true;apply.disabled=true;
+   apply.hidden=true;apply.disabled=true;apply.style.display='none';acknowledge.style.display='none';
  }
  review.onclick=()=>{
    invalidate();
@@ -46,7 +46,7 @@ export function renderCircuitApply(){
        replacement.features.length+' annotations · linear'+
        '\n\nAnnotations are regenerated from each resolved leaf part with 1-based coordinates and strand orientation.'+
        '\nExisting annotations will be replaced. No Git commit is created.';
-     acknowledge.hidden=false;apply.hidden=false;
+     acknowledge.hidden=false;acknowledge.style.display='flex';apply.hidden=false;apply.style.display='inline-flex';
    }catch(error){details.textContent='Review rejected: '+error.message;}
  };
  checkbox.onchange=()=>{apply.disabled=!checkbox.checked||!pending;};
