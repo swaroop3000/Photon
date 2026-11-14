@@ -16,7 +16,7 @@ test('3 prime mismatch is prohibited despite mismatch budget',()=>{
   assert.equal(mismatchBindingSites('ATGCT','ATGCC',{maxMismatches:1,protected3Prime:0}).length,1);
 });
 test('reverse-strand primer mismatch positions are given in 5 prime orientation',()=>{
-  const hits=mismatchBindingSites('GGACT','AGCC',{strand:'reverse',maxMismatches:1,protected3Prime:1});
+  const hits=mismatchBindingSites('GGATT','AGCC',{strand:'reverse',maxMismatches:1,protected3Prime:1});
   assert.equal(hits.length,1);
   assert.deepEqual(hits[0].primerMismatchPositions,[1]);
 });
@@ -34,7 +34,7 @@ test('validation rejects ambiguous templates, invalid options and excessive hits
   assert.throws(()=>mismatchBindingSites('ACGN','ACG'),/Invalid DNA base/);
   assert.throws(()=>mismatchBindingSites('ACG','ACG',{maxMismatches:-1}),/Invalid maxMismatches/);
   assert.throws(()=>mismatchBindingSites('ACG','ACG',{protected3Prime:4}),/exceed primer/);
-  assert.throws(()=>mismatchBindingSites('AAAA','A',{maxMismatches:0,maxHits:2}),/limit exceeded/);
+  assert.throws(()=>mismatchBindingSites('AAAA','A',{maxMismatches:0,protected3Prime:1,maxHits:2}),/limit exceeded/);
 });
 test('pair screen returns both strands and explicit scope warning',()=>{
   const s=mismatchPrimerPairScreen('ACGTTT','ACG','AAC',{maxMismatches:0});
