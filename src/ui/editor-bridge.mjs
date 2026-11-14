@@ -7,6 +7,7 @@ import { applySequenceRevision } from '../core/photon-adapter.mjs';
 const host = globalThis.PhotonEditorBridgeHost;
 if (!host) throw new Error('Photon legacy editor host was not initialized');
 
+globalThis.PhotonEditorBridgeReady = true;
 const histories = new Map();
 const clone = value => structuredClone(value);
 const repoKey = () => host.identity();
