@@ -263,3 +263,31 @@ test('Builder previews multi-component SBOL3 and exposes graph download',async()
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('reusable library previews nested DNA graph, persists, and rejects cycles',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  await page.locator('.tab[data-tool="builder"]').click();
+  await page.locator('#photonPartsV27').waitFor();
+  await page.getByRole('button',{name:'Preview hierarchy'}).click();
+  const output=page.locator('#photonPartsPreview');
+  await output.getByText('circuit', {exact:false}).first().waitFor();
+  assert.match(await output.innerText(),/promoter/);
+  assert.match(await output.innerText(),/cassette/);
+  assert.equal(await page.getByRole('button',{name:'Export hierarchy SBOL 3'}).isVisible(),true);
+  await page.getByRole('button',{name:'Save part library'}).click();
+  await page.reload({waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  await page.locator('.tab[data-tool="builder"]').click();
+  assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit/);
+  await page.locator('#photonPartsDefinitions').fill('assembly A B+\nassembly B A+');
+  await page.getByRole('button',{name:'Preview hierarchy'}).click();
+  assert.match(await page.locator('#photonPartsPreview').innerText(),/Circular assembly reference/);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
