@@ -540,6 +540,19 @@ parseGenBank=function(source){
    return window.PhotonFeatureIO.parse(source);
  return _photonLegacyGenbankImport(source);
 };
+// Photon 2.3: versioned Photon XML roundtrip with explicit rejection of
+// unsupported external SBOL documents. The legacy formatter is not used for
+// exporting because its coordinates, topology and qualifiers are lossy.
+const _photonLegacySbolExport=toSBOL;
+toSBOL=function(w){
+ if(!window.PhotonFeatureIO?.serializeSbol)throw new Error('Photon SBOL codec not loaded');
+ return window.PhotonFeatureIO.serializeSbol(w);
+};
+const _photonLegacySbolImport=parseSBOL;
+parseSBOL=function(source){
+ if(!window.PhotonFeatureIO?.parseSbol)throw new Error('Photon SBOL codec not loaded');
+ return window.PhotonFeatureIO.parseSbol(source);
+};
 // Photon 1.1 adapter host: keep legacy UI intact while ES module handles edits.
 window.PhotonEditorBridgeHost={
   working:()=>W(),
