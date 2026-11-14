@@ -754,3 +754,34 @@ test('invalid annotated deletion is rejected without mutating working DNA',async
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+test('disjoint substitutions preserve intervening features in the browser editor',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.seq='AACCGGTTAACC';w.topology='linear';
+   w.features=[{name:'middle',start:5,end:8,type:'promoter',strand:1},
+               {name:'first',start:2,end:2,type:'misc',strand:1},
+               {name:'last',start:11,end:11,type:'misc',strand:1}];
+   host.render();
+  });
+  const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  await page.locator('#se').fill('ATCCGGTTAATC');
+  await page.locator('#ap').click();
+  const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.deepEqual(after.features.map(f=>[f.start,f.end]),[[5,8],[2,2],[11,11]]);
+  assert.equal(after.features[0].affected,undefined);
+  assert.equal(after.features[1].affected,true);
+  assert.equal(after.features[2].affected,true);
+  await page.locator('#ub').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+  await page.locator('#rb').click();
+  assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
