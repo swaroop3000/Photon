@@ -685,9 +685,14 @@ test('Photon 3.4 rejects a stale Primer3 result after template change',async()=>
    const panel=page.locator('#photonPrimer3V34');
    await panel.locator('#photonPrimer3MinV34').fill('80');
    await panel.locator('#photonPrimer3MaxV34').fill('300');
-   const w=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
-   if(w.topology!=='linear')await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().topology='linear';});
+   await page.evaluate(()=>{
+     const w=window.PhotonEditorBridgeHost.working();
+     w.seq='ATGCCGTAGTTCGATGCTAG'.repeat(25);
+     w.topology='linear';w.features=[];
+   });
+   const requestDownload=page.waitForEvent('download');
    await panel.getByRole('button',{name:'Export Primer3 request'}).click();
+   assert.equal((await requestDownload).suggestedFilename(),'primer3-request.json');
    await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
    await panel.locator('#photonPrimer3ResultFileV34').setInputFiles({
      name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{}')
