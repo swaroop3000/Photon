@@ -135,3 +135,17 @@ The Builder includes a **Six-frame translation explorer** with an adjustable min
 Annotated **CDS** features are analyzed separately in their declared strand orientation, including circular-origin annotations when supported by Photon's coordinate model. The report records translated protein, feature coordinates, start codon, peptide length, terminal stop, internal stop count, and heuristic flags for non-ATG starts, missing terminal stops, internal stops, or length not divisible by three. Invalid CDS coordinates are reported explicitly instead of being silently interpreted as valid.
 
 **Report and safety:** The versioned **`photon/translation/1`** JSON report can be downloaded after analysis, but export is refused when the working construct or repository/branch has changed. Results do not mutate DNA, annotations, or version history. The analysis does not establish real transcription, translational efficiency, splicing, alternative genetic code, alternative start codons, regulatory activity, or protein function. An absence of heuristic flags does not establish a functional gene product.
+
+
+## Photon 3.4 — Real Primer3 engine (local workflow)
+
+Photon now supports **actual Primer3 pair design** using the maintained **primer3-py 2.4.0** bindings, with a strict local JSON interchange. This integration is **not** an in-browser port of Primer3: Photon is a static browser app and does not execute Python. No DNA is sent to a remote API, server, or GitHub Action from the UI.
+
+1. Open the **Primers** tab, configure a product length interval and select **Export Primer3 request**. This downloads `primer3-request.json` containing the **full DNA sequence** and constraints.
+2. On a local computer with Python 3.9+ and the Photon repository checked out, install `python -m pip install primer3-py==2.4.0`. Consider an isolated virtual environment.
+3. Run `python scripts/primer3_runner.py primer3-request.json primer3-results.json`. This executes the **real Primer3 design engine**, returning forward and reverse primer sequences, their actual Primer3 melting temperatures, product lengths, pair penalty scores, and the engine version.
+4. Return to the same linear working template in Photon and select **Import Primer3 results JSON**. The UI validates the template identity, coordinates, primer matches, product size, data shape, and engine metadata before showing the candidate list and optional map markers.
+
+The engine has a separate **Real Primer3 engine integration** GitHub Actions workflow. It installs the pinned Python dependency, runs Primer3 against a **synthetic fixture** (not user DNA), and validates the returned primer pairs with Photon. The previous **heuristic** candidate selector remains available and is explicitly distinguished from Primer3.
+
+**Limitations:** This release requires local Python and an explicit file exchange rather than one-click browser execution; there is no unattended server request, WASM engine, global specificity analysis, reference-genome search, or guarantee of laboratory primer performance. Only linear A/C/G/T templates (40–1,000,000 bases) are supported in this handoff. Actual thermodynamic output depends on the specified Primer3 configuration and does not substitute experimental PCR validation. Imported JSON metadata is not cryptographically signed; Photon validates its internal consistency and template matches but cannot prove its origin from Primer3. Do not upload private sample sequences to third-party services without appropriate permissions.
