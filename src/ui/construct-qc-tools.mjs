@@ -42,6 +42,7 @@ export function renderConstructQC(){
        ' / G '+report.baseCounts.G+' / T '+report.baseCounts.T+
        '\nAnnotations '+report.featureCount+' · flagged errors '+errors+
        ' · warnings '+warnings+' · informational '+infos+
+       '\nAdjacent annotation junctions '+report.annotationJunctions.length+
        '\nHomopolymer runs '+report.repeats.homopolymers.length+
        ' · tandem repeat candidates '+report.repeats.tandem.length+
        ' · complete ORFs (≥30 aa) '+report.predictedOrfs.length+
