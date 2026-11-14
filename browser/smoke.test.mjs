@@ -627,3 +627,71 @@ test('Photon 3.3 rejects stale translation report downloads after DNA changes',a
   assert.equal(await download.isVisible(),false);
  }finally{await browser.close();}
 });
+
+
+test('Photon 3.4 exports request and accepts template-validated Primer3 results',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+   const page=await browser.newPage({acceptDownloads:true});
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{
+     if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+     const w=window.PhotonEditorBridgeHost.working();
+     w.name='Primer3Sample';w.seq='ATGCGTACCGTTAGCAATGCCGTAGCTTACGATCGATGCCTGATCGTTACGATCGTTCATCGATCGTTCATGC';
+     w.topology='linear';w.features=[];
+     window.PhotonEditorBridgeHost.render();
+   });
+   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+   await page.locator('.tab[data-tool="primers"]').click();
+   const panel=page.locator('#photonPrimer3V34');
+   await panel.waitFor();
+   await panel.locator('#photonPrimer3MinV34').fill('40');
+   await panel.locator('#photonPrimer3MaxV34').fill('65');
+   const downloadEvent=page.waitForEvent('download');
+   await panel.getByRole('button',{name:'Export Primer3 request'}).click();
+   const download=await downloadEvent;
+   assert.equal(download.suggestedFilename(),'primer3-request.json');
+   const fixture=await page.evaluate(()=>{
+     const seq=window.PhotonEditorBridgeHost.working().seq;
+     const comp={A:'T',T:'A',C:'G',G:'C'};
+     const reverse=[...seq.slice(45,65)].reverse().map(c=>comp[c]).join('');
+     return {
+       format:'photon/primer3-result/1',engine:'primer3-py',engineVersion:'2.4.0',
+       name:'Primer3Sample',template:seq,
+       pairs:[{forward:{sequence:seq.slice(0,20),start:0,tm:60.1},
+         reverse:{sequence:reverse,start:45,tm:59.5},
+         productSize:65,pairPenalty:1.2}],
+       explain:'Browser interchange fixture (not a real design run)'
+     };
+   });
+   await panel.locator('#photonPrimer3ResultFileV34').setInputFiles({
+     name:'fixture-primer3.json',mimeType:'application/json',
+     buffer:Buffer.from(JSON.stringify(fixture))
+   });
+   assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/1 validated pair/);
+   assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/Primer3-py 2.4.0/);
+   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
+   assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('Photon 3.4 rejects a stale Primer3 result after template change',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+   const page=await browser.newPage();
+   await page.goto(URL,{waitUntil:'networkidle'});
+   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+   await page.locator('.tab[data-tool="primers"]').click();
+   const panel=page.locator('#photonPrimer3V34');
+   await panel.locator('#photonPrimer3MinV34').fill('80');
+   await panel.locator('#photonPrimer3MaxV34').fill('300');
+   const w=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+   if(w.topology!=='linear')await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().topology='linear';});
+   await panel.getByRole('button',{name:'Export Primer3 request'}).click();
+   await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
+   await panel.locator('#photonPrimer3ResultFileV34').setInputFiles({
+     name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{}')
+   });
+   assert.match(await panel.locator('#photonPrimer3ResultsV34').innerText(),/changed since request export/);
+ }finally{await browser.close();}
+});
