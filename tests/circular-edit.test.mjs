@@ -27,7 +27,7 @@ test('removing the whole gap is rejected',()=>{
 test('multiple wrapped features require the edit to be safe for all',()=>{
  const w=original();
  w.features.push({name:'second',start:8,end:4,strand:-1});
- assert.throws(()=>applyCircularGapEdit(w,{start:4,end:5,insert:'A'}),/overlaps/);
+ assert.throws(()=>applyCircularGapEdit(w,{start:3,end:4,insert:'A'}),/overlaps/);
  const r=applyCircularGapEdit(w,{start:5,end:5,insert:'A'});
  assert.deepEqual(r.working.features.map(f=>[f.start,f.end]),[[11,3],[9,4]]);
 });
