@@ -2,7 +2,7 @@
  * Legacy feature coordinates: 1-based inclusive. Core: 0-based half-open.
  * This module deliberately does not modify the legacy HTML or localStorage.
  */
-import { normalizeDNA, editSequence } from './dna.mjs';
+import { normalizeDNA, editSequence, editSequenceBatch } from './dna.mjs';
 import { applyCircularGapEdit } from './circular-edit.mjs';
 
 function assertLegacyFeature(f, length) {
@@ -140,21 +140,18 @@ export function applyExplicitEdits(working, operations) {
     }else assertLegacyFeature(f,before.length);
   }
   let current=cloneState(working);
-  for(const edit of edits){
-    if(current.features.some(f=>f.start>f.end)){
+  if(!current.features.some(f=>f.start>f.end)){
+    const result=editSequenceBatch(before,current.features.map(f=>({...f,start:f.start-1})),edits);
+    const features=result.features.map(f=>{
+      const {affected,...rest}=f;
+      return {...rest,start:f.start+1,...(affected?{affected:true}:{})};
+    });
+    if(features.some(f=>f.start<1||f.end>result.sequence.length))
+      throw new RangeError('Edit produces invalid annotation coordinates; reannotation required');
+    current={...current,seq:result.sequence,features};
+  }else{
+    for(const edit of edits){
       current=applyCircularGapEdit(current,edit).working;
-    }else{
-      const core=current.features.map(f=>({...f,start:f.start-1}));
-      const result=editSequence(current.seq,core,edit);
-      if(result.features.some(f=>f.end<=f.start))
-        throw new RangeError('Edit would erase an annotation; remove or reannotate it explicitly');
-      const features=result.features.map(f=>{
-        const {affected,...rest}=f;
-        return {...rest,start:f.start+1,...(affected?{affected:true}:{})};
-      });
-      if(features.some(f=>f.start<1||f.end>result.sequence.length))
-        throw new RangeError('Edit produces invalid annotation coordinates; reannotation required');
-      current={...current,seq:result.sequence,features};
     }
   }
   return {working:current,changed:current.seq!==before,

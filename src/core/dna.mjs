@@ -47,10 +47,15 @@ export function findMotif(sequence,motif,{circular=false,bothStrands=false}={}){
 export function editSequence(sequence,features,{start,end,insert=''}){
   const s=normalizeDNA(sequence);assertInt(start,'start');assertInt(end,'end');if(start<0||end<start||end>s.length)throw new RangeError('Invalid edit interval');
   if(!Array.isArray(features))throw new TypeError('features must be an array');
-  const replacement=normalizeDNA(insert),delta=replacement.length-(end-start),newFeatures=[];
+  const replacement=normalizeDNA(insert),delta=replacement.length-(end-start);
+  const newFeatures=transformFeatures(features,s.length,{start,end,insert:replacement});
+  return {sequence:s.slice(0,start)+replacement+s.slice(end),features:newFeatures,delta};
+}
+function transformFeatures(features,length,{start,end,insert:replacement}){
+  const delta=replacement.length-(end-start),newFeatures=[];
   for(const f of features){
     if(!f||typeof f!=='object')throw new TypeError('Feature must be an object');
-    const a=f.start,b=f.end;assertInt(a,'feature.start');assertInt(b,'feature.end');if(a<0||b<a||b>s.length)throw new RangeError('Invalid feature interval');
+    const a=f.start,b=f.end;assertInt(a,'feature.start');assertInt(b,'feature.end');if(a<0||b<a||b>length)throw new RangeError('Invalid feature interval');
     let startNew=a,endNew=b,affected=false;
     if(start===end){
       if(start<=a){startNew+=delta;endNew+=delta;}
@@ -61,7 +66,42 @@ export function editSequence(sequence,features,{start,end,insert=''}){
     if(startNew>endNew)endNew=startNew;
     newFeatures.push({...f,start:startNew,end:endNew,affected:affected||Boolean(f.affected)});
   }
-  return {sequence:s.slice(0,start)+replacement+s.slice(end),features:newFeatures,delta};
+  return newFeatures;
+}
+/** Explicit original-coordinate batch for non-wrapped features. Normalize the
+ * genome once and concatenate unchanged segments once, rather than copying and
+ * validating the full genome per operation. Coordinate transforms retain the
+ * right-to-left policy, rejecting any intermediate erased annotation atomically.
+ * Sequence work is O(bases + inserted bases + edits log edits); annotation work
+ * remains O(features * edits). This is not whole-genome editor virtualization.
+ */
+export function editSequenceBatch(sequence,features,operations){
+  const s=normalizeDNA(sequence);
+  if(!Array.isArray(features))throw new TypeError('features must be an array');
+  if(!Array.isArray(operations)||!operations.length)throw new RangeError('At least one edit is required');
+  const edits=operations.map(op=>{
+    if(!op)throw new RangeError('Invalid edit interval');
+    const {start,end}=op;assertInt(start,'start');assertInt(end,'end');
+    if(start<0||end<start||end>s.length)throw new RangeError('Invalid edit interval');
+    return {start,end,insert:normalizeDNA(op.insert??'')};
+  }).sort((a,b)=>b.start-a.start||b.end-a.end);
+  for(let i=1;i<edits.length;i++){
+    if(edits[i].end>edits[i-1].start||edits[i].start===edits[i-1].start)
+      throw new RangeError('Overlapping or coincident edits are ambiguous');
+  }
+  let mapped=features,length=s.length;
+  for(const edit of edits){
+    mapped=transformFeatures(mapped,length,edit);
+    if(mapped.some(f=>f.end<=f.start))
+      throw new RangeError('Edit would erase an annotation; remove or reannotate it explicitly');
+    length+=edit.insert.length-(edit.end-edit.start);
+  }
+  const parts=[];let cursor=0;
+  for(let i=edits.length-1;i>=0;i--){
+    const edit=edits[i];parts.push(s.slice(cursor,edit.start),edit.insert);cursor=edit.end;
+  }
+  parts.push(s.slice(cursor));
+  return {sequence:parts.join(''),features:mapped,delta:length-s.length};
 }
 export function parseFASTA(text){
   if(typeof text!=='string')throw new TypeError('FASTA input must be a string');const records=[];let current=null;
