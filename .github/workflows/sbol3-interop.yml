@@ -42,3 +42,24 @@ jobs:
           assert len(report.errors) == 0, 'pySBOL3 reported validation errors'
           print('pySBOL3 independently validated Component, sequence and two features')
           PY
+      - name: Generate multi-component RDF graph
+        run: node tests/emit-sbol3-assembly.mjs > /tmp/photon-multipart.nt
+      - name: Independently validate SubComponent links and locations
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-multipart.nt', encoding='utf-8') as f:
+              doc.read_string(f.read(), sbol3.NTRIPLES)
+          circuit = doc.find('https://photon.app/sbol3/MultiPartCircuit')
+          assert circuit is not None, 'Missing parent assembly'
+          assert len(circuit.features) == 3, 'Missing linked subcomponents'
+          assert all(isinstance(part, sbol3.SubComponent) for part in circuit.features)
+          assert all(len(part.locations) == 1 for part in circuit.features)
+          assert len(circuit.sequences) == 1
+          for feature in circuit.features:
+              assert doc.find(feature.instance_of) is not None, 'Missing child component'
+          report = doc.validate()
+          print('Multi-component SBOL3 validation:', report)
+          assert len(report.errors) == 0, 'Invalid SubComponent graph'
+          PY
