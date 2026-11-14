@@ -51,3 +51,26 @@ test('rejects empty, malformed, or oversized option inputs',()=>{
  assert.throws(()=>analyzeConstructQC(source('ATGC'),{repeatLimit:0}),/repeatLimit/);
  assert.throws(()=>analyzeConstructQC({seq:'ATGC',topology:'linear'}),/Working construct/);
 });
+
+
+test('reports adjacent annotated junction sequences without claiming validation',()=>{
+ const r=analyzeConstructQC(source('ATGCCGTTAA',[
+  {name:'partA',type:'misc_feature',start:1,end:4,strand:1},
+  {name:'partB',type:'misc_feature',start:5,end:10,strand:-1}
+ ]));
+ assert.equal(r.annotationJunctions.length,1);
+ assert.equal(r.annotationJunctions[0].boundary,4);
+ assert.match(r.annotationJunctions[0].flanks,/\|/);
+ assert.match(r.annotationJunctions[0].assessment,/not supplied/);
+});
+test('detects adjacency at the circular sequence origin',()=>{
+ const r=analyzeConstructQC(source('ATGCCGTTAA',[
+  {name:'end',start:7,end:10,type:'misc_feature'},
+  {name:'begin',start:1,end:3,type:'misc_feature'}
+ ],'circular'));
+ assert.ok(r.annotationJunctions.some(j=>j.leftFeature==='end'&&j.rightFeature==='begin'&&j.boundary===0));
+});
+test('bounds annotation workload on untrusted inputs',()=>{
+ const f=Array.from({length:2001},(_,i)=>({name:'part'+i,start:1,end:1,type:'misc_feature'}));
+ assert.throws(()=>analyzeConstructQC(source('ATGC',f)),/2,000 annotations/);
+});
