@@ -15,9 +15,11 @@ function history() {
   if (!histories.has(key)) histories.set(key, { past: [], future: [], signature: null });
   return histories.get(key);
 }
-function signature(w) { return JSON.stringify([w.seq,w.features]); }
+function signature(w) { return JSON.stringify([w.name,w.seq,w.topology,w.features]); }
 function update(w) {
   const target = host.working();
+  target.name = w.name;
+  target.topology = w.topology;
   target.seq = w.seq;
   target.features = clone(w.features);
   host.selectionReset();
@@ -28,6 +30,9 @@ function perform(command, sequence) {
   const old = host.working();
   const h = history();
   if (command === 'apply') {
+    if(h.signature!==null&&h.signature!==signature(old)){
+      h.past.length=0;h.future.length=0;h.signature=null;
+    }
     const result = applySequenceRevision(old, sequence);
     if (!result.changed) { host.message('No sequence changes.'); return; }
     h.past.push(clone(old));
@@ -69,3 +74,26 @@ document.addEventListener('click', event => {
     host.message('Sequence edit rejected: '+error.message);
   }
 }, true);
+
+/** Photon 2.9: deliberate full construct replacement, recorded in the same
+ * undo/redo stack as sequence edits. No repository commit is created.
+ */
+globalThis.PhotonEditorHistory={
+ replaceConstruct(next){
+   if(!next||typeof next!=='object'||!Array.isArray(next.features)||
+      !['linear','circular'].includes(next.topology)||
+      typeof next.name!=='string'||typeof next.seq!=='string')
+     throw new TypeError('Invalid replacement construct');
+   const old=host.working(),h=history();
+   if(h.signature!==null&&h.signature!==signature(old)){
+     h.past.length=0;h.future.length=0;
+   }
+   if(signature(old)===signature(next))return false;
+   h.past.push(clone(old));if(h.past.length>50)h.past.shift();
+   h.future.length=0;
+   h.signature=signature(next);
+   update(clone(next));
+   host.message('Circuit applied to working plasmid. Undo is available; commit separately.');
+   return true;
+ }
+};
