@@ -219,3 +219,30 @@ test('external GenBank import preserves annotations and refuses unsupported join
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+
+test('SBOL3 N-Triples export and reviewed file import preserve circular features',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
+  const input={name:'P2_5',seq:'AACCGGTTAACC',topology:'circular',
+    features:[{name:'wrapped',type:'CDS',start:10,end:3,strand:-1,
+      qualifiers:{gene:'bla',note:'test'}}]};
+  const graph=await page.evaluate(w=>window.PhotonSbol3.serialize(w),input);
+  assert.match(graph,/http:\/\/sbols.org\/v3#Component/);
+  await page.locator('#fileIn').setInputFiles({
+    name:'test.sbol3.nt',mimeType:'text/plain',buffer:Buffer.from(graph)
+  });
+  await page.locator('#impApply').waitFor();
+  await page.locator('#impApply').click();
+  const out=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
+  assert.equal(out.name,input.name);
+  assert.equal(out.seq,input.seq);
+  assert.equal(out.topology,input.topology);
+  assert.deepEqual(out.features,input.features);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
