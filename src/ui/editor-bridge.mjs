@@ -2,7 +2,7 @@
  * to the independently tested DNA engine via the legacy-format adapter.
  * The module is loaded only on HTTP(S) deployments; file:// keeps legacy behavior.
  */
-import { applySequenceRevision } from '../core/photon-adapter.mjs';
+import { applySequenceRevision, applyExplicitEdits } from '../core/photon-adapter.mjs';
 
 const host = globalThis.PhotonEditorBridgeHost;
 if (!host) throw new Error('Photon legacy editor host was not initialized');
@@ -80,6 +80,22 @@ document.addEventListener('click', event => {
  * undo/redo stack as sequence edits. No repository commit is created.
  */
 globalThis.PhotonEditorHistory={
+ /** Batch operations refer to the unchanged working sequence at call time.
+  * One batch produces one undo entry and never creates a repository commit.
+  */
+ applyEdits(edits){
+   const old=host.working(),h=history();
+   if(h.signature!==null&&h.signature!==signature(old)){
+     h.past.length=0;h.future.length=0;h.signature=null;
+   }
+   const result=applyExplicitEdits(old,edits);
+   if(!result.changed)return false;
+   h.past.push(clone(old));if(h.past.length>50)h.past.shift();
+   h.future.length=0;h.signature=signature(result.working);
+   update(result.working);
+   host.message('DNA batch applied; review affected features and commit separately.');
+   return true;
+ },
  replaceConstruct(next){
    if(!next||typeof next!=='object'||!Array.isArray(next.features)||
       !['linear','circular'].includes(next.topology)||
