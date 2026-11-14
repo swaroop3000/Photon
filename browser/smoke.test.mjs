@@ -52,3 +52,26 @@ test('Primer and Cloning tabs load independently without script exceptions',asyn
    assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+
+test('origin-spanning circular annotation draws two clickable map segments',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(URL,{waitUntil:'networkidle'});
+  await page.evaluate(()=>{
+   if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();
+   const host=window.PhotonEditorBridgeHost,w=host.working();
+   w.topology='circular';
+   w.features.push({name:'origin-crossing test',start:w.seq.length-5,end:4,strand:1,type:'CDS'});
+   host.render();
+  });
+  await page.locator('#mapView #photonWrappedFeatures path').first().waitFor();
+  assert.equal(await page.locator('#mapView #photonWrappedFeatures path').count(),2);
+  await page.locator('.maptab[data-v="linear"]').click();
+  assert.equal(await page.locator('#mapView #photonWrappedFeatures rect').count(),2);
+  await page.locator('.maptab[data-v="circular"]').click();
+  assert.equal(await page.locator('#mapView #photonWrappedFeatures path').count(),2);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
