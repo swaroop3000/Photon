@@ -37,3 +37,18 @@ test('linear feature roundtrip remains linear',()=>{
  {name:'x',type:'CDS',start:2,end:5,strand:-1}]};
  assert.deepEqual(parseGenbank(serializeGenbank(linear)).features,linear.features);
 });
+
+
+test('GenBank supported qualifiers survive round-trip with coordinates and strands',()=>{
+ const input={...w,features:[{...w.features[0],qualifiers:{
+   gene:'bla',product:'beta lactamase',note:'annotation checked'}}]};
+ const exported=serializeGenbank(input);
+ const result=parseGenbank(exported);
+ assert.deepEqual(result.features,input.features);
+ assert.equal(result.topology,'circular');
+ assert.equal(result.seq,input.seq);
+});
+test('GenBank unsupported qualifiers are rejected instead of silently discarded',()=>{
+ assert.throws(()=>serializeGenbank({...w,features:[{...w.features[0],qualifiers:{unknown:'x'}}]}),
+  /Unsupported GenBank qualifier/);
+});
