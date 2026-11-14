@@ -91,6 +91,7 @@ test('circular feature creation, editing, and GenBank roundtrip preserve origin 
   });
   await page.locator('.tab[data-tool="features"]').click();
   const length=await page.locator('#se').inputValue().then(s=>s.length);
+  await page.getByText('+ Add feature').click();
   await page.locator('#nn').fill('Wrap test');
   await page.locator('#ns').fill(String(length-4));
   await page.locator('#ne').fill('3');
