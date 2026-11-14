@@ -44,3 +44,15 @@ test('new edit clears redo history and no-op does not create undo entry', () => 
   h.apply('AACCTTTAACC');
   assert.equal(h.canRedo,false);
 });
+
+
+test('origin-spanning features are preserved on no-op and block unsafe sequence liftover',()=>{
+ const w=sample();
+ w.topology='circular';
+ w.features=[{name:'wrapped',start:10,end:2,strand:1,type:'CDS'}];
+ const unchanged=applySequenceRevision(w,w.seq);
+ assert.equal(unchanged.changed,false);
+ assert.deepEqual(unchanged.working.features,w.features);
+ assert.throws(()=>applySequenceRevision(w,w.seq+'A'),/require reannotation/);
+ assert.equal(w.seq,'AACCGGTTAACC');
+});
