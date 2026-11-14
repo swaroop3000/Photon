@@ -13,7 +13,6 @@ test('editor opens and dynamic modules connect to interface',async()=>{
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(URL,{waitUntil:'networkidle'});
    assert.equal(await page.title(),'Photon — DNA design + version control');
-   await page.locator('button[data-go="code"]').first().click().catch(()=>{});
    const editor=page.locator('#se');
    // If the app starts in the editor already, no navigation is needed.
    if(await editor.count()===0){
