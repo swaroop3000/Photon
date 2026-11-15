@@ -1,5 +1,17 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: navigable bounded genome display — November 15, 2026
+
+- Continues `7954c01`. `sequence-window.mjs` projects at most 6,000 bases with
+  clipped annotation spans, without normalizing/copying the full sequence.
+- Existing sequence panel adds previous/next and absolute base jump controls;
+  selecting a feature opens its coordinate window. Navigation is transient and
+  never persists project state. Editor text and full snapshots remain unvirtualized.
+- Three core and two browser regressions cover circular clipping, invalid ranges,
+  a 1 Mb write-free navigation workflow and 10 Mb persistence/reload/tail selection.
+  Targeted browser cases passed; all 258 Node tests and static build passed.
+- This does not raise import limits or establish whole-genome browser budgets.
+
 ## Latest: GenBank qualifier and CDS semantics milestone — November 15, 2026
 
 - Continues `782bfd4`. GenBank retains ordered repeated strings, known valueless

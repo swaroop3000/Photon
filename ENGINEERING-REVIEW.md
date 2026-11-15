@@ -49,7 +49,8 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Add a manual, isolated-process 100 kb / 1 Mb / 10 Mb profiling matrix (not a CI speed requirement).
 - [x] Build non-wrapped explicit edit batches by concatenating unchanged segments once, avoiding full-sequence normalization/copy per edit. Preserve sequential annotation policy in 300 deterministic differential cases and a 10 Mb/1,000-edit metadata regression. Annotation mapping remains O(features × edits), wrapped edits retain the conservative path, and the browser editor is not virtualized.
 - [ ] Multiple hardware/browser datasets, memory budgets, storage quotas and whole-genome workflows.
-- [ ] Virtualized editor and streaming file import for multi-megabase constructs.
+- [x] Navigable bounded sequence display (6,000 bases/window), absolute-coordinate jump and feature selection; no project writes on navigation. Chromium exercises 1 Mb navigation and 10 Mb save/reload/final annotation.
+- [ ] Full editor virtualization, incremental snapshots/diffs and streaming file import for multi-megabase constructs; bounded display alone does not complete this gate.
 
 ## 5. Scientific validation and release
 - [x] Node unit tests and browser smoke tests in CI.
