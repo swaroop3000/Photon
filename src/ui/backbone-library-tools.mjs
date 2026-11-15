@@ -35,13 +35,13 @@ export function renderBackboneLibrary(){
  status.style.marginTop='8px';
  const storageKey=()=>PREFIX+host.identity();
  function read(){
-   const raw=localStorage.getItem(storageKey());
+   const raw=globalThis.PhotonLibraryStorage.getItem(storageKey());
    return raw?parseBackboneLibrary(raw):createBackboneLibrary();
  }
- function commit(library){
+ async function commit(library){
    // Verify before touching persistent storage.
    const canonical=serializeBackboneLibrary(library);
-   localStorage.setItem(storageKey(),canonical);
+   await globalThis.PhotonLibraryStorage.setItem(storageKey(),canonical);
  }
  function populate(preferred){
    const selected=preferred??selector.value;
@@ -62,18 +62,18 @@ export function renderBackboneLibrary(){
    const link=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
    link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
- save.onclick=()=>{
+ save.onclick=async()=>{
    try{
      const id=idInput.value.trim();
      const lib=addBackbone(read(),id,host.working());
-     commit(lib);populate(id);status.textContent='Saved circular backbone '+id+' locally.';
+     await commit(lib);populate(id);status.textContent='Saved circular backbone '+id+' locally.';
    }catch(e){status.textContent='Save rejected: '+e.message;}
  };
- remove.onclick=()=>{
+ remove.onclick=async()=>{
    if(selector.value==='current')return;
    try{
      const id=selector.value,lib=read();
-     delete lib.entries[id];commit(lib);populate('current');
+     delete lib.entries[id];await commit(lib);populate('current');
      status.textContent='Removed saved backbone '+id+'.';
    }catch(e){status.textContent='Remove rejected: '+e.message;}
  };
@@ -87,7 +87,7 @@ export function renderBackboneLibrary(){
      const backbone=parseGenbank(await file.text());
      const id=idInput.value.trim();
      const next=addBackbone(read(),id,backbone);
-     commit(next);populate(id);status.textContent='Imported GenBank backbone '+id+'.';
+     await commit(next);populate(id);status.textContent='Imported GenBank backbone '+id+'.';
    }catch(e){status.textContent='GenBank import rejected: '+e.message;}
    gbInput.value='';
  };
@@ -99,7 +99,7 @@ export function renderBackboneLibrary(){
        if(Object.hasOwn(current.entries,id))throw new RangeError('Existing backbone ID: '+id);
        current.entries[id]=backbone;
      }
-     commit(current);populate();status.textContent='Imported '+Object.keys(imported.entries).length+' saved backbone(s).';
+     await commit(current);populate();status.textContent='Imported '+Object.keys(imported.entries).length+' saved backbone(s).';
    }catch(e){status.textContent='JSON import rejected: '+e.message;}
    jsonInput.value='';
  };

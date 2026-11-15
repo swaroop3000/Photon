@@ -126,34 +126,34 @@ function toSBOL(w){let a='';w.features.forEach((f,i)=>{a+=`    <sbol:SequenceAnn
 function download(n,t){const b=new Blob([t],{type:'text/plain'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
 function seqDiff(o,n){if(o===n)return null;let p=0;while(p<o.length&&p<n.length&&o[p]===n[p])p++;let s=0;while(s<o.length-p&&s<n.length-p&&o[o.length-1-s]===n[n.length-1-s])s++;return{pre:p,rm:o.slice(p,o.length-s),add:n.slice(p,n.length-s),sufStart:o.length-s};}
 /* ============================================================ GIT MODEL ============================================================ */
-const KEY='locusPro_v1';let DB,projectStorage;
-function load(){const result=projectStorage.open({create:()=>{seed();return DB;},migrate:db=>{Object.values(db.repos).forEach(migrate);}});DB=result.data;}
+const KEY='locusPro_v1';let DB,projectStorage,projectCommands;
+async function load(){const result=await projectStorage.open({create:()=>{seed();return DB;},migrate:db=>{Object.values(db.repos).forEach(migrate);}});DB=result.data;}
 function migrate(r){r.pulls=r.pulls||[];r.issues=r.issues||[];r.tags=r.tags||[];r.wiki=r.wiki||[{title:'Home',body:'Welcome to the '+r.name+' wiki.'}];if(r.protected===undefined)r.protected=false;r.pulls.forEach(p=>{p.reviews=p.reviews||[];});r.issues.forEach(i=>{i.comments=i.comments||[];i.labels=i.labels||[];});}
 function save(){
- try{if(!projectStorage){const error=new Error('Project storage is unavailable');error.name='ProjectStorageError';throw error;}const result=projectStorage.save(DB);showStorageStatus();return result;}
- catch(error){if(projectStorage)DB=projectStorage.rollback();showStorageStatus(error);window.PhotonRecovery?.capture(projectStorage?.status);queueMicrotask(()=>render());throw error;}
+ if(!projectCommands){const error=new Error('Project storage is unavailable');error.name='ProjectStorageError';throw error;}
+ return projectCommands.save(DB);
 }
 function showStorageStatus(error){
  const status=projectStorage?.status;
- const backup=document.getElementById('photonBackup');if(backup)backup.disabled=!projectStorage||!!status?.blocked;
+ const backup=document.getElementById('photonBackup');if(backup)backup.disabled=!projectStorage||!!status?.temporary;
  let banner=document.getElementById('photonStorageNotice');
  const message=status?.issue?.message||error?.message;
  if(!message){banner?.remove();return;}
  if(!banner){banner=document.createElement('section');banner.id='photonStorageNotice';banner.className='card';banner.setAttribute('role','alert');banner.style.cssText='margin:10px;padding:12px;border-color:var(--partial)';document.querySelector('.topbar').after(banner);}
  banner.replaceChildren();
  const text=document.createElement('div');
- text.textContent=message+(!projectStorage?' A temporary demo is shown; project saving is unavailable.':status?.blocked?' A temporary demo is shown; stored projects are not replaced.': ' The failed action was rolled back. Download unsaved recovery before closing or reloading this tab.');
+ text.textContent=message+(!projectStorage?' A temporary demo is shown; project saving is unavailable.':status?.temporary?' A temporary demo is shown; stored projects are not replaced.':status?.blocked?' Current projects are read-only. Export before resolving the storage conflict.': ' The failed action was rolled back. Download unsaved recovery before closing or reloading this tab.');
  banner.append(text);
  if(status?.recoveryRaw!==null&&status?.recoveryRaw!==undefined){
   const button=document.createElement('button');button.className='btn sm';button.id='photonStorageRecovery';
-  button.textContent=status.recoveryKind==='original'?'Download original stored data':'Download unsaved recovery';
-  button.onclick=()=>{const raw=projectStorage.status.recoveryRaw;if(projectStorage.status.recoveryKind==='original')download('photon-original-storage.json',raw);else download('photon-unsaved-recovery.json','{"format":"photon/local-project-backup/1","data":'+raw+'}');};
+  button.textContent=status.recoveryKind==='original'?'Download original stored data':status.recoveryKind==='library'?'Download unsaved library':'Download unsaved recovery';
+  button.onclick=()=>{const raw=projectStorage.status.recoveryRaw;if(projectStorage.status.recoveryKind==='original')download('photon-original-storage.json',raw);else if(projectStorage.status.recoveryKind==='library')download('photon-library-recovery.json',raw);else if(projectStorage.status.recoveryKind==='command')download('photon-command-recovery.json',raw);else download('photon-unsaved-recovery.json','{"format":"photon/local-project-backup/1","data":'+raw+'}');};
   banner.append(button);
  }
 }
 window.addEventListener('error',event=>{if(event.error?.name==='ProjectStorageError'){event.preventDefault();flash(event.error.message);}});
 window.addEventListener('unhandledrejection',event=>{if(event.reason?.name==='ProjectStorageError'){event.preventDefault();flash(event.reason.message);}});
-window.addEventListener('beforeunload',event=>{if(projectStorage?.status.issue&&projectStorage.status.recoveryKind==='unsaved'&&!window.PhotonRecovery?.isPersisted(projectStorage.status)){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(projectCommands?.busy||(projectStorage?.status.issue&&['unsaved','library','command'].includes(projectStorage.status.recoveryKind)&&!window.PhotonRecovery?.isPersisted(projectStorage.status))){event.preventDefault();event.returnValue='';}});
 const uid=()=>Math.random().toString(36).slice(2,9);
 function snap(w){return{name:w.name,seq:w.seq,topology:w.topology,features:JSON.parse(JSON.stringify(w.features))};}
 function seed(){const s=SAMPLE();autoAnn(s);annORFs(s);const rid=uid(),cid=uid();DB={repos:{},cur:rid,tab:'code'};DB.repos[rid]={id:rid,name:s.name,desc:'Demo plasmid.',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Initial import',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+s.name+'\n\nOpen, versioned DNA design. Edit → commit → branch → PR → merge.'}],readme:'# '+s.name+'\n\nAn open, versioned DNA design. Every change is tracked like Git.'};}
@@ -541,7 +541,7 @@ if((text.match(/^LOCUS\s/gm)||[]).length>1){
     DB.repos[rid]={id:rid,name:d.name,desc:'Imported GenBank collection',stars:0,created:Date.now(),branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Import GenBank record',author:'you',time:Date.now(),snap:snap(s)}},working:snap(s),tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'# '+d.name}],readme:'# '+d.name};
     created.push(rid);
    }
-   DB.cur=created[0];DB.tab='code';if(!save())throw new Error('Browser storage is full or inaccessible; export a Photon backup and free browser storage before importing.');
+   DB.cur=created[0];DB.tab='code';save(); // The async coordinator rolls back the entire candidate on failure.
   }catch(error){
    for(const rid of created)delete DB.repos[rid];
    DB.cur=previous;DB.tab=previousTab;
@@ -639,10 +639,10 @@ window.PhotonEditorBridgeHost={
  backup.className='btn sm';backup.id='photonBackup';
  backup.textContent='Backup projects';
  backup.title='Download all local Photon repositories, including commits and annotations';
- backup.onclick=()=>{
+ backup.onclick=async()=>{
   try{
    const payload={format:'photon/local-project-backup/1',
-     exportedAt:new Date().toISOString(),data:structuredClone(DB)};
+     exportedAt:new Date().toISOString(),data:(await projectStorage.readSnapshot()).data};
    download('photon-projects-backup.json',JSON.stringify(payload,null,2));
    flash('Full local Photon backup exported. Keep the file in a safe location.');
   }catch(error){flash('Backup export failed: '+error.message);}
@@ -664,7 +664,8 @@ window.PhotonEditorBridgeHost={
    if(!confirm('Restore '+Object.keys(records).length+' project(s)? This REPLACES all current browser-local Photon projects. Export a backup of your current projects first.'))return;
    // Persist before replacing in-memory data; storage failures leave the UI unchanged.
    if(!projectStorage)throw new Error('Project storage is unavailable; reload with modules available before restoring');
-   projectStorage.save(next,{restore:true});
+   if(projectCommands.busy)throw new Error('Another project action is saving; retry restore after it finishes');
+   await projectCommands.save(next,{restore:true});
    DB=next;U.sel=-1;showStorageStatus();render();
    flash('Restored '+Object.keys(DB.repos).length+' local Photon projects.');
   }catch(error){if(error.name==='ProjectStorageError'){showStorageStatus();window.PhotonRecovery?.capture(projectStorage?.status);}flash('Backup restore rejected: '+error.message);}
@@ -682,8 +683,28 @@ document.addEventListener('click',event=>{
 },true);
 document.body.inert=true;
 window.PhotonRecoveryHost={status:()=>projectStorage?.status,download:(name,text)=>download(name,text),message:message=>flash(message)};
-window.PhotonInitializeStorage=store=>{
- projectStorage=store;load();render();showStorageStatus();
+window.PhotonInitializeStorage=async(store,makeCommands)=>{
+ projectStorage=store;await load();render();showStorageStatus();
+ if(store.status.migrated){const note=document.createElement('section');note.id='photonMigrationNotice';note.className='card';note.setAttribute('role','status');note.style.cssText='margin:10px;padding:10px';note.textContent='Projects and libraries were copied to the new local store. The original copy is retained for recovery. Close older Photon tabs before editing. ';const dismiss=document.createElement('button');dismiss.className='btn sm';dismiss.textContent='Dismiss';dismiss.onclick=()=>note.remove();note.append(dismiss);document.querySelector('.topbar').after(note);}
+
+ const renderNow=render,flashNow=flash;let renderPending=false,messagePending=null,failedKind=null;
+ projectCommands=makeCommands({store,
+  onBusy:busy=>{document.body.inert=busy;let note=document.getElementById('photonSaving');if(busy&&!note){note=document.createElement('div');note.id='photonSaving';note.className='mini';note.setAttribute('role','status');note.textContent='Saving projects…';document.querySelector('.topbar').after(note);}if(!busy)note?.remove();},
+  onFailure:(error,checkpoint,kind)=>{DB=checkpoint;failedKind=kind;messagePending=null;showStorageStatus(error);window.PhotonRecovery?.capture(store.status);},
+  onIdle:error=>{showStorageStatus(error);if(renderPending||(error&&failedKind!=='library'))renderNow();renderPending=false;if(error)flashNow(error.message);else if(messagePending)flashNow(messagePending);messagePending=null;failedKind=null;}
+ });
+ render=function(){if(projectCommands.busy){renderPending=true;return;}renderNow();};
+ flash=function(message){if(projectCommands.busy){messagePending=message;return;}flashNow(message);};
+ window.PhotonProjects={whenIdle:()=>projectCommands.whenIdle(),readSnapshot:()=>store.readSnapshot(),snapshotEntries:()=>store.snapshotEntries(),get status(){return {...store.status,busy:projectCommands.busy};}};
+ window.PhotonLibraryStorage={getItem:key=>store.getLibrary(key),setItem:(key,raw)=>projectCommands.saveLibrary(key,raw)};
+ window.PhotonRecoveryHost.snapshotEntries=()=>store.snapshotEntries();
+ window.PhotonRecoveryHost.migrationSource=()=>store.migrationSource();
+ window.PhotonRecoveryHost.retainedLegacySource=()=>store.retainedLegacySource();
+ window.PhotonRecoveryHost.restoreData=async(data,libraries,reviewedLegacyHash)=>{
+  if(projectCommands.busy)throw new Error('Another action is saving; retry after it finishes');
+  await projectCommands.save(data,{restore:true,libraries,reviewedLegacyHash});DB=data;U.sel=-1;showStorageStatus();render();flash('Restored retained source after review.');
+ };
+ window.PhotonRecoveryHost.migrateDefaults=data=>{Object.values(data.repos).forEach(migrate);return data;};
  document.body.inert=false;
  if(!store.status.issue){try{if(!localStorage.getItem('locusSeenTut')){localStorage.setItem('locusSeenTut','1');setTimeout(openTutorial,400);}}catch(e){}}
 };

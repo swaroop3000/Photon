@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {settled} from './storage-helpers.mjs';
 const URL='http://127.0.0.1:8765/';
 
 test('multi-record GenBank collection imports to separate local repositories',async()=>{
@@ -18,6 +19,7 @@ test('multi-record GenBank collection imports to separate local repositories',as
   await page.locator('#impCollection').waitFor();
   assert.match(await page.locator('#modal').innerText(),/2 records/);
   await page.locator('#impCollection').click();
+  await settled(page);
   await page.waitForFunction(()=>window.PhotonEditorBridgeHost.working().name==='CollectionA');
   const result=await page.evaluate(()=>{
    const items=Object.values(DB.repos).filter(r=>r.desc==='Imported GenBank collection');

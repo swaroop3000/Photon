@@ -4,6 +4,7 @@ import {readFile,mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {chromium} from 'playwright';
+import {settled,faultProjectWrites} from './storage-helpers.mjs';
 import {parseBrowserArchive} from '../src/core/project-archive.mjs';
 const URL='http://127.0.0.1:8765/';
 async function visit(page){await page.goto(URL,{waitUntil:'networkidle'});await page.evaluate(()=>window.closeModal?.());}
@@ -14,22 +15,24 @@ test('archive preserves project and auxiliary library bytes across a browser res
  try{
   context=await chromium.launchPersistentContext(profile,{headless:true,acceptDownloads:true});
   const page=context.pages()[0];await visit(page);
-  const before=await page.evaluate(()=>{
-   localStorage.setItem('photon.parts.2.7:'+PhotonEditorBridgeHost.identity(),'part alpha ACGT\nassembly construct alpha+');
-   localStorage.setItem('photon.backbones.3.1:'+PhotonEditorBridgeHost.identity(),'{"format":"photon/backbones/1","entries":{}}');
+  const before=await page.evaluate(async()=>{
+   await PhotonLibraryStorage.setItem('photon.parts.2.7:'+PhotonEditorBridgeHost.identity(),'part alpha ACGT\nassembly construct alpha+');
+   await PhotonLibraryStorage.setItem('photon.backbones.3.1:'+PhotonEditorBridgeHost.identity(),'{"format":"photon/backbones/1","entries":{}}');
    localStorage.setItem('another-app-key','do not copy');
-   return Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]));
+   return {legacy:Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])),entries:Object.fromEntries((await PhotonProjects.snapshotEntries()).map(e=>[e.key,e.raw]))};
   });
   await page.locator('#photonRecoveryCenter').click();await page.locator('#photonCreateArchive').click();
+  await settled(page);
   await page.waitForFunction(()=>document.getElementById('photonVaultStatus').textContent.includes('saved and verified'));
   const first=await downloaded(page,()=>page.locator('[data-vault-id^="archive:"]').getByRole('button',{name:'Download',exact:true}).click());
   const archive=await parseBrowserArchive(first);assert.equal(archive.entries.length,3);
-  for(const entry of archive.entries)assert.equal(entry.raw,before[entry.key]);
+  for(const entry of archive.entries)assert.equal(entry.raw,before.entries[entry.key]);
   assert.equal(archive.entries.some(e=>e.key==='another-app-key'),false);
-  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]))),before);
+  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]))),before.legacy);
   await context.close();context=null;
   context=await chromium.launchPersistentContext(profile,{headless:true,acceptDownloads:true});
   const reopened=context.pages()[0];await visit(reopened);await reopened.locator('#photonRecoveryCenter').click();
+  await settled(reopened);
   const second=await downloaded(reopened,()=>reopened.locator('[data-vault-id^="archive:"]').getByRole('button',{name:'Download',exact:true}).click());
   assert.deepEqual(await parseBrowserArchive(second),archive);
  }finally{await context?.close();await rm(profile,{recursive:true,force:true});}
@@ -40,11 +43,9 @@ test('failed edit recovery survives restart and is never silently applied',async
  try{
   context=await chromium.launchPersistentContext(profile,{headless:true,acceptDownloads:true});
   const page=context.pages()[0];await visit(page);const original=await page.locator('#se').inputValue();
-  await page.evaluate(()=>{
-   const set=Storage.prototype.setItem;
-   Storage.prototype.setItem=function(key,value){if(key==='locusPro_v1')throw new DOMException('recovery test quota','QuotaExceededError');return set.call(this,key,value);};
-  });
+  await faultProjectWrites(page,'recovery test quota');
   await page.locator('#se').fill(original+'A');await page.locator('#ap').click();
+  await settled(page);
   await page.waitForFunction(()=>document.getElementById('photonRecoveryPersistence')?.textContent.includes('Recovery copy saved'));
   assert.equal(await page.locator('#se').inputValue(),original);
   await context.close();context=null;
@@ -53,6 +54,7 @@ test('failed edit recovery survives restart and is never silently applied',async
   assert.equal(await reopened.locator('#se').inputValue(),original);
   assert.match(await reopened.locator('#photonPersistentRecoveryNotice').innerText(),/saved recovery/);
   await reopened.locator('#photonRecoveryCenter').click();
+  await settled(reopened);
   const text=await downloaded(reopened,()=>reopened.locator('[data-vault-id^="recovery:"]').getByRole('button',{name:'Download',exact:true}).click());
   const backup=JSON.parse(text);assert.equal(backup.data.repos[backup.data.cur].working.seq,original+'A');
   await reopened.evaluate(()=>closeModal());reopened.once('dialog',d=>d.accept());
@@ -135,12 +137,14 @@ test('unavailable IndexedDB preserves primary save behavior and in-memory recove
  const browser=await chromium.launch();
  try{
   const page=await browser.newPage({acceptDownloads:true});
-  await page.addInitScript(()=>{IDBFactory.prototype.open=function(){throw new DOMException('vault denied','SecurityError');};});
+  await page.addInitScript(()=>{const open=IDBFactory.prototype.open;IDBFactory.prototype.open=function(name,...args){if(name==='photon-project-recovery')throw new DOMException('vault denied','SecurityError');return open.call(this,name,...args);};});
   await visit(page);const original=await page.locator('#se').inputValue();
   await page.locator('#se').fill(original+'A');await page.locator('#ap').click();
+  await settled(page);
   assert.equal(await page.locator('#se').inputValue(),original+'A');
-  await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('primary quota','QuotaExceededError');};});
+  await faultProjectWrites(page,'primary quota');
   await page.locator('#se').fill(original+'AC');await page.locator('#ap').click();
+  await settled(page);
   await page.waitForFunction(()=>document.getElementById('photonRecoveryPersistence')?.textContent.includes('could not be saved'));
   const text=await downloaded(page,()=>page.locator('#photonStorageRecovery').click());
   const payload=JSON.parse(text);assert.equal(payload.data.repos[payload.data.cur].working.seq,original+'AC');

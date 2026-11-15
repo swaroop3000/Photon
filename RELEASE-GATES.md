@@ -19,10 +19,12 @@ separate user approval. A successful build is not merge or publication approval.
 
 ## Before requesting merge approval
 
-- [ ] Design and review the asynchronous project command lifecycle. Switch the
-      active IndexedDB backend only with coordinated project/library migration,
-      atomic concurrent-writer handling and explicit recovery/rollback tests.
-      The current vault is staging and does not satisfy this gate.
+- [x] Implement the asynchronous project command lifecycle and active IndexedDB
+      backend with coordinated project/library migration, shared revision CAS,
+      failure rollback, source retention and missing-active-data protection tests.
+- [ ] Independently review the cutover, command lifecycle and release rollback
+      procedure. Automatic reverse migration and general archive-file restore
+      remain open; retained legacy data must not be assumed current.
 - [ ] Review the accumulated PR code, especially legacy merge/rebase/stash,
       annotation integrity, import/bundle trust boundaries and all HTML/SVG sinks.
       The scoped security assessment is not independent full-review signoff.

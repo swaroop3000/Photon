@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {chromium} from 'playwright';
+import {savedState,faultProjectWrites,settled} from './storage-helpers.mjs';
 const URL='http://127.0.0.1:8765/';
 test('full local project backup round-trips through explicit restore',async()=>{
  const browser=await chromium.launch({headless:true,acceptDownloads:true});
@@ -18,7 +19,7 @@ test('full local project backup round-trips through explicit restore',async()=>{
   const payload=JSON.parse(bytes.toString());
   assert.equal(payload.format,'photon/local-project-backup/1');
   assert.deepEqual(payload.data,JSON.parse(before));
-  await page.evaluate(()=>{DB.repos[DB.cur].name='TEMP_RENAMED';save();});
+  await page.evaluate(async()=>{DB.repos[DB.cur].name='TEMP_RENAMED';await save();});
   page.once('dialog',d=>d.accept());
   await page.locator('#photonRestoreInput').setInputFiles({
    name:'photon-projects-backup.json',mimeType:'application/json',buffer:bytes
@@ -36,7 +37,7 @@ test('corrupt history and quota failures leave saved and working projects untouc
   const page=await browser.newPage();
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>window.closeModal?.());
-  const before=await page.evaluate(()=>({memory:JSON.stringify(DB),saved:localStorage.getItem(KEY)}));
+  const before=await savedState(page);
   const payload=JSON.parse(before.memory);
   const r=payload.repos[payload.cur];
   r.branches[r.branch].head='missing';
@@ -47,11 +48,11 @@ test('corrupt history and quota failures leave saved and working projects untouc
   await upload(payload);
   await page.waitForFunction(()=>document.title.includes('Backup restore rejected'));
   assert.equal(confirmations,0,'invalid history must not even reach the replacement prompt');
-  await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('quota test','QuotaExceededError');};});
+  await faultProjectWrites(page,'quota test');
   await upload(JSON.parse(before.memory));
   await page.waitForFunction(()=>document.title.includes('quota test'));
   assert.equal(confirmations,1);
-  assert.deepEqual(await page.evaluate(()=>({memory:JSON.stringify(DB),saved:localStorage.getItem(KEY)})),before);
+  assert.deepEqual(await savedState(page),before);
   await page.reload({waitUntil:'networkidle'});
   assert.equal(await page.evaluate(()=>JSON.stringify(DB)),before.memory);
  }finally{await browser.close();}
@@ -63,14 +64,14 @@ test('cancelling a valid restore does not write storage',async()=>{
   const page=await browser.newPage();
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>window.closeModal?.());
-  const before=await page.evaluate(()=>({memory:JSON.stringify(DB),saved:localStorage.getItem(KEY)}));
+  const before=await savedState(page);
   const payload={format:'photon/local-project-backup/1',data:JSON.parse(before.memory)};
   payload.data.repos[payload.data.cur].name='Replacement';
   const dialog=page.waitForEvent('dialog');
   await page.locator('#photonRestoreInput').setInputFiles({name:'backup.json',mimeType:'application/json',
    buffer:Buffer.from(JSON.stringify(payload))});
   await (await dialog).dismiss();
-  assert.deepEqual(await page.evaluate(()=>({memory:JSON.stringify(DB),saved:localStorage.getItem(KEY)})),before);
+  assert.deepEqual(await savedState(page),before);
  }finally{await browser.close();}
 });
 test('invalid backup is refused without changing local projects',async()=>{

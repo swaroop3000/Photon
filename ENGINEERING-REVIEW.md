@@ -30,8 +30,9 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Centralize main project persistence in `project-storage.mjs`: validate live data, throw on failed writes, restore the last successful in-memory checkpoint, and expose attempted data for download. Stage editor history only after a successful save. Fault tests cover failed Apply/Undo, Commit and single/collection imports, plus real Chromium quota exhaustion with a 1 Mb project.
 - [x] Preserve corrupt/unreadable startup storage without seeding over it. Show a temporary demo with a persistent recovery notice, offer exact original-byte download when readable, and require an explicitly confirmed validated restore to replace it. Defer UI module startup until projects are initialized; missing modules fail closed.
 - [x] Reject observed cross-tab changes before writing; test reload recovery and full browser-process restart persistence for working DNA, nested annotations and committed HEAD. This is compare-before-write protection, not atomic multi-tab transactions.
-- [ ] IndexedDB migration and atomic simultaneous-writer coordination; persistent unsaved recovery across crashes; auxiliary part/backbone library migration; reconciliation of legacy records that fail current semantic validation.
-- [x] Stage a versioned IndexedDB archive preserving exact main-project and known auxiliary-library source strings, with source-change detection, checksums and read-back verification. Active storage remains localStorage; multi-key restore/cutover is not implemented.
+- [x] Active IndexedDB project/library cutover with asynchronous command acknowledgements, atomic migration/write rollback and revision CAS, including same-client races. Original legacy strings are retained; missing active data cannot silently reopen older source. Explicit reviewed source retry checks for changes after review. See the November 15 validation record.
+- [ ] Independent cutover/rollback review; automatic reverse migration, general archive-file restore, reconciliation of records that fail semantic validation and broader browser/device failure acceptance.
+- [x] Stage a versioned archive preserving exact project/library source strings, with checksums and read-back verification. Archives now read committed active IndexedDB snapshots; general archive-file restore remains unfinished.
 - [x] Persist failed-attempt recovery records with catalog/payload atomicity; verify restart/export, aborted transaction rollback, concurrent capacity enforcement, future-schema refusal, corrupt-payload rejection and unavailable IndexedDB behavior. Retention refuses new copies at capacity without deleting existing copies. Persistence is reported only after transaction completion; browser eviction/device loss remain possible.
 - [ ] Extend collection import beyond the supported subset and provide complete provenance review and storage-quota migration.
 - [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
@@ -87,3 +88,9 @@ IUPAC follow-up: 242 core / 54 browser tests, build and 3,669 Biopython assertio
 passed, including 225 code pairs and 3,375 codon patterns with the documented
 mixed-residue alphabet policy. Updated diagnostic matrix is recorded alongside
 `AMBIGUITY-VALIDATION.md`. Real-record and laboratory acceptance remain open.
+
+November 15 active-storage milestone: 248 core / 66 Chromium browser tests and
+static build passed. New checks cover atomic cutover, source-byte retention,
+same-/multi-client revision races, failed combined writes, migration interruption,
+missing active data, reviewed recovery, library retry and acknowledgement timing.
+See `reports/2026-11-15/INDEXEDDB-VALIDATION.md`. This does not approve main merge.

@@ -40,7 +40,9 @@ This is a scientific *foundation*, not a certified clinical engine. The motif fi
 Separate modules implement restriction cuts, supported GenBank/SBOL subsets and
 conservative circular-gap edits; their contracts appear in `FORMAT-SUPPORT.md`.
 Full INSDC compound features and broad scientific validation remain open. Projects
-use browser-local storage with explicit backup/restore, not remote Git persistence.
+use a revisioned IndexedDB backend with coordinated project/library migration,
+explicit backup/restore and a separate recovery vault, not remote Git persistence.
+See `STORAGE.md` for asynchronous save acknowledgement and recovery boundaries.
 
 `applyExplicitEdits` in `photon-adapter.mjs` accepts original-coordinate edit
 batches. Non-wrapped features use `editSequenceBatch` to normalize and concatenate

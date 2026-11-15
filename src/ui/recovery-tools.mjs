@@ -1,6 +1,7 @@
 /** Local archive and persistent failed-attempt recovery; no active backend switch. */
 import {createRecoveryVault} from '../core/recovery-vault.mjs';
-import {captureProjectStorage,createBrowserArchive,parseBrowserArchive} from '../core/project-archive.mjs';
+import {PRIMARY_PROJECT_KEY,createBrowserArchive,parseBrowserArchive,sha256} from '../core/project-archive.mjs';
+import {validateProjectDatabase} from '../core/project-backup.mjs';
 const host=globalThis.PhotonRecoveryHost;
 const vault=createRecoveryVault();
 const sessionId=globalThis.crypto?.randomUUID?.()??Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
@@ -40,7 +41,7 @@ globalThis.PhotonRecovery={
   persistenceNote('Saving a recovery copy on this device… Keep this tab open until it finishes.');
   try{
    const body={format:'photon/failed-project-save/1',sessionId,kind,raw};
-   await vault.put('recovery',body,{label:kind==='original'?'Original stored data':'Unsaved project attempt'});
+   await vault.put('recovery',body,{label:kind==='original'?'Original stored data':kind==='library'?'Unsaved library attempt':'Unsaved project attempt'});
    if(lastCapture.raw===raw&&lastCapture.kind===kind){
     lastCapture.complete=true;
     persistenceNote('Recovery copy saved on this device. Open Recovery after reopening Photon.');
@@ -54,9 +55,23 @@ globalThis.PhotonRecovery={
 };
 function action(label,handler){const node=document.createElement('button');node.className='btn sm';node.textContent=label;node.onclick=handler;return node;}
 button.onclick=async()=>{
- globalThis.modal('<h2 class="ph">Local recovery</h2><div class="sub">Saved copies remain on this browser and device. Export a file for a separate backup. Creating an archive leaves your current projects unchanged.</div><button class="btn sm" id="photonCreateArchive">Create local archive</button><div id="photonVaultStatus" role="status" class="mini" style="margin:10px 0"></div><div id="photonVaultList"></div><button class="btn" onclick="closeModal()">Close</button>');
+ globalThis.modal('<h2 class="ph">Local recovery</h2><div class="sub">Saved copies remain on this browser and device. Export a file for a separate backup. Creating an archive leaves your current projects unchanged.</div><button class="btn sm" id="photonCreateArchive">Create local archive</button><button class="btn sm" id="photonMigrationSource">Download original migration source</button><button class="btn sm" id="photonRetainedSource">Download retained legacy copy</button><button class="btn sm" id="photonReviewRetainedSource">Review retained source for restore</button><div id="photonVaultStatus" role="status" class="mini" style="margin:10px 0"></div><div id="photonVaultList"></div><button class="btn" onclick="closeModal()">Close</button>');
  const status=document.getElementById('photonVaultStatus'),list=document.getElementById('photonVaultList');
  const archiveButton=document.getElementById('photonCreateArchive');
+ document.getElementById('photonMigrationSource').onclick=async()=>{try{host.download('photon-migration-source.json',JSON.stringify(await host.migrationSource(),null,2));}catch(error){status.textContent='Source export rejected: '+error.message;}};
+ document.getElementById('photonRetainedSource').onclick=()=>{try{host.download('photon-retained-legacy-source.json',JSON.stringify(host.retainedLegacySource(),null,2));}catch(error){status.textContent='Legacy export rejected: '+error.message;}};
+ document.getElementById('photonReviewRetainedSource').onclick=async()=>{
+  try{
+   const source=host.retainedLegacySource(),primary=source.entries.find(e=>e.key===PRIMARY_PROJECT_KEY);
+   if(!primary)throw new Error('No retained projects were found; restore a validated project backup instead');
+   const data=host.migrateDefaults(JSON.parse(primary.raw));validateProjectDatabase(data,{maxProjects:Infinity});
+   const libraries=source.entries.filter(e=>e.key!==PRIMARY_PROJECT_KEY);
+   const reviewedHash=await sha256(JSON.stringify(source.entries));
+   if(!confirm('This retained copy may be older than your latest projects. Restore '+Object.keys(data.repos).length+' project(s) and '+libraries.length+' library entries? Current projects and matching library keys will be replaced. Download available copies before continuing.'))return;
+   await host.restoreData(data,libraries,reviewedHash);status.textContent='Retained source restored after explicit review.';
+  }catch(error){status.textContent='Source restore rejected: '+error.message;}
+ };
+
  async function populate(){
   const records=await vault.list();list.replaceChildren();
   for(const entry of records){
@@ -69,8 +84,8 @@ button.onclick=async()=>{
       await parseBrowserArchive(JSON.stringify(value));
       host.download('photon-browser-archive.json',JSON.stringify(value,null,2));
      }else if(value.format==='photon/failed-project-save/1'&&typeof value.raw==='string'){
-      host.download(value.kind==='original'?'photon-original-storage.json':'photon-unsaved-recovery.json',
-       value.kind==='original'?value.raw:'{"format":"photon/local-project-backup/1","data":'+value.raw+'}');
+      host.download(value.kind==='original'?'photon-original-storage.json':value.kind==='library'?'photon-library-recovery.json':value.kind==='command'?'photon-command-recovery.json':'photon-unsaved-recovery.json',
+       value.kind!=='unsaved'?value.raw:'{"format":"photon/local-project-backup/1","data":'+value.raw+'}');
      }else throw new Error('Unsupported saved recovery format');
     }catch(error){status.textContent='Recovery download rejected: '+error.message;}
    });
@@ -86,9 +101,9 @@ button.onclick=async()=>{
  archiveButton.onclick=async()=>{
   archiveButton.disabled=true;status.textContent='Creating and verifying a local archive…';
   try{
-   const entries=captureProjectStorage(localStorage),archive=await createBrowserArchive(entries);
+   const entries=await host.snapshotEntries(),archive=await createBrowserArchive(entries);
    // Detect changes observed while hashing. This is a copy, not a cross-store move.
-   if(JSON.stringify(captureProjectStorage(localStorage))!==JSON.stringify(entries))
+   if(JSON.stringify(await host.snapshotEntries())!==JSON.stringify(entries))
     throw new Error('Browser projects changed while archiving; retry');
    const metadata=await vault.put('archive',archive,{label:'Project archive ('+entries.length+' storage entries)'});
    const verified=await parseBrowserArchive(JSON.stringify(await vault.read(metadata.id)));

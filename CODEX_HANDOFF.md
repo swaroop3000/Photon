@@ -1,5 +1,34 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: active IndexedDB cutover — November 15, 2026
+
+- Continued from `1d42019`. `src/core/indexed-project-storage.mjs` is now the active
+  project/library backend; `project-commands.mjs` coordinates asynchronous commits.
+  Bootstrap awaits initialization. The earlier localStorage driver remains as a
+  historical/tested module and error type, not an automatic fallback.
+- Migration copies projects and both library namespaces atomically, retains exact
+  legacy bytes, and reserves a small non-genomic migration marker before cutover.
+  A missing active record with that marker never silently reopens stale source.
+  Interrupted migration/missing data needs explicitly reviewed recovery.
+- Project/library writes use a shared revision CAS inside a readwrite transaction.
+  Both multiple clients and simultaneous direct calls from one client are tested.
+  UI actions are locked while saving; success/render acknowledgement is deferred.
+  Consecutive synchronous legacy snapshots coalesce. Restore rejects overlapping
+  actions and stale queued candidates. DNA history changes only after commit.
+- Part/backbone saves await the same coordinator, retain failed editor text and
+  export attempted library bytes. Archives read committed active snapshots.
+  Recovery can export immutable migration source/current retained source and
+  explicitly review a retained source restore. Source changes after review reject.
+- Full local verification: 248 core tests, 66 Chromium browser tests and static
+  build passed. See `reports/2026-11-15/INDEXEDDB-VALIDATION.md` for exact scope.
+- Remaining: independent code/cutover/rollback review, automatic reverse migration,
+  general archive-file restore, larger backup import limits, whole-genome browser
+  budgets, broader interoperability/scientific validation. Keep PR #1 draft;
+  preserve main; no production promotion without approval.
+
+The older sections below describe earlier checkpoints; use this section and
+`STORAGE.md` for the active persistence architecture.
+
 ## Takeover milestones (latest session)
 
 ### Extended-session follow-up: recovery vault and migration staging

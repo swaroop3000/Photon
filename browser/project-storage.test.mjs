@@ -4,34 +4,28 @@ import {readFile,mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {chromium} from 'playwright';
+import {savedState,faultProjectWrites,settled} from './storage-helpers.mjs';
 const URL='http://127.0.0.1:8765/';
 async function visit(page){
  await page.goto(URL,{waitUntil:'networkidle'});
  await page.evaluate(()=>window.closeModal?.());
 }
-const state=page=>page.evaluate(()=>({memory:JSON.stringify(DB),saved:localStorage.getItem(KEY)}));
-async function faultWrites(page){
- await page.evaluate(()=>{
-  const original=Storage.prototype.setItem;
-  window.failProjectWrites=true;
-  Storage.prototype.setItem=function(key,value){
-   if(key==='locusPro_v1'&&window.failProjectWrites)throw new DOMException('injected quota failure','QuotaExceededError');
-   return original.call(this,key,value);
-  };
- });
-}
+const state=savedState;
+const faultWrites=page=>faultProjectWrites(page);
 async function recovery(page){
  const pending=page.waitForEvent('download');await page.locator('#photonStorageRecovery').click();
+  await settled(page);
  return readFile(await (await pending).path(),'utf8');
 }
 for(const kind of ['malformed JSON','broken branch head'])test(kind+' startup preserves original data and supports explicit restore',async()=>{
  const browser=await chromium.launch();
  try{
-  const page=await browser.newPage({acceptDownloads:true});await visit(page);
+  let page=await browser.newPage({acceptDownloads:true});await visit(page);
   const valid=JSON.parse((await state(page)).memory);
   const corrupt=structuredClone(valid);corrupt.repos[corrupt.cur].branches.main.head='missing';
   const raw=kind==='malformed JSON'?'{truncated original':JSON.stringify(corrupt);
-  await page.evaluate(raw=>localStorage.setItem(KEY,raw),raw);await page.reload({waitUntil:'networkidle'});
+  await page.context().close();page=await browser.newPage({acceptDownloads:true});
+  await page.addInitScript(raw=>{localStorage.setItem('locusPro_v1',raw);localStorage.setItem('locusSeenTut','1');},raw);await visit(page);
   assert.match(await page.locator('#photonStorageNotice').innerText(),/Original storage was left untouched/);
   assert.equal(await page.locator('#photonBackup').isDisabled(),true);
   assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),raw);
@@ -39,6 +33,7 @@ for(const kind of ['malformed JSON','broken branch head'])test(kind+' startup pr
   const originalDemo=await page.evaluate(()=>JSON.stringify(DB));
   await page.locator('#se').fill((await page.locator('#se').inputValue())+'A');
   await page.locator('#ap').click();
+  await settled(page);
   assert.equal(await page.evaluate(()=>JSON.stringify(DB)),originalDemo);
   assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),raw);
   page.once('dialog',dialog=>dialog.accept());
@@ -65,6 +60,7 @@ test('denied startup reads never overwrite existing projects',async()=>{
   await visit(page);
   assert.match(await page.locator('#photonStorageNotice').innerText(),/access denied/);
   await page.locator('#se').fill((await page.locator('#se').inputValue())+'A');await page.locator('#ap').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>({raw:window.originalProjectData(),writes:window.projectWrites})),{raw:'original data',writes:0});
  }finally{await browser.close();}
 });
@@ -75,18 +71,23 @@ test('failed Apply and Undo leave both saved projects and editor history intact'
   const page=await browser.newPage({acceptDownloads:true});await visit(page);
   const original=await page.locator('#se').inputValue();
   await page.locator('#se').fill(original+'A');await page.locator('#ap').click();
+  await settled(page);
   const edited=await state(page);await faultWrites(page);
   await page.locator('#ub').click();
+  await settled(page);
   assert.deepEqual(await state(page),edited);
   assert.match(await page.locator('#photonStorageNotice').innerText(),/quota failure/);
   await page.evaluate(()=>window.failProjectWrites=false);await page.locator('#ub').click();
+  await settled(page);
   assert.equal(await page.locator('#se').inputValue(),original);
   const undone=await state(page);await page.evaluate(()=>window.failProjectWrites=true);
   await page.locator('#se').fill(original+'C');await page.locator('#ap').click();
+  await settled(page);
   assert.deepEqual(await state(page),undone);
   const attempted=JSON.parse(await recovery(page));
   assert.equal(attempted.data.repos[attempted.data.cur].working.seq,original+'C');
   await page.evaluate(()=>window.failProjectWrites=false);await page.locator('#rb').click();
+  await settled(page);
   assert.equal(await page.locator('#se').inputValue(),original+'A');
   await page.reload({waitUntil:'networkidle'});
   assert.equal(await page.locator('#se').inputValue(),original+'A');
@@ -98,9 +99,11 @@ test('failed Commit rolls back its head and recovers the attempted snapshot',asy
  try{
   const page=await browser.newPage({acceptDownloads:true});await visit(page);
   await page.locator('#se').fill((await page.locator('#se').inputValue())+'A');await page.locator('#ap').click();
+  await settled(page);
   const before=await state(page),data=JSON.parse(before.memory),count=Object.keys(data.repos[data.cur].commits).length;
   await faultWrites(page);
   page.once('dialog',d=>d.accept('quota commit'));await page.locator('#btnCommit').click();
+  await settled(page);
   assert.deepEqual(await state(page),before);
   assert.match(await page.locator('#photonStorageNotice').innerText(),/quota failure/);
   assert.doesNotMatch(await page.title(),/^Committed:/);
@@ -108,13 +111,14 @@ test('failed Commit rolls back its head and recovers the attempted snapshot',asy
   assert.equal(Object.keys(attempted.data.repos[attempted.data.cur].commits).length,count+1);
   await page.evaluate(()=>window.failProjectWrites=false);
   page.once('dialog',d=>d.accept('retry commit'));await page.locator('#btnCommit').click();
+  await settled(page);
   const committed=await state(page);assert.notEqual(committed.saved,before.saved);
   await page.reload({waitUntil:'networkidle'});
   assert.deepEqual(await state(page),committed);
  }finally{await browser.close();}
 });
 
-test('real browser quota exhaustion preserves a 1 Mb project and allows retry after space is freed',async()=>{
+test('full legacy localStorage does not prevent 1 Mb IndexedDB editing',async()=>{
  const browser=await chromium.launch();
  try{
   const page=await browser.newPage();await visit(page);
@@ -131,10 +135,12 @@ test('real browser quota exhaustion preserves a 1 Mb project and allows retry af
   });
   const sequence='ACGT'.repeat(250000)+'A'.repeat(4096);
   await page.locator('#se').fill(sequence);await page.locator('#ap').click();
-  assert.deepEqual(await state(page),before);
-  assert.match(await page.locator('#photonStorageNotice').innerText(),/quota/i);
+  await settled(page);
+  assert.notEqual((await state(page)).saved,before.saved);
+  assert.equal((await state(page)).legacy,before.legacy);
   await page.evaluate(()=>localStorage.removeItem('photon-test-quota-filler'));
   await page.locator('#se').fill(sequence);await page.locator('#ap').click();
+  await settled(page);
   assert.equal(await page.locator('#photonStorageNotice').count(),0);
   await page.reload({waitUntil:'networkidle'});
   assert.equal(await page.locator('#se').inputValue(),sequence);
@@ -155,6 +161,7 @@ test('failed single-record and collection imports roll back all repository chang
    const text=serializeGenbankCollection(button==='#impCollection'?records:records.slice(0,1));
    await page.locator('#fileIn').setInputFiles({name:'test.gb',mimeType:'text/plain',buffer:Buffer.from(text)});
    await page.locator(button).click();
+  await settled(page);
    assert.deepEqual(await state(page),before);
    assert.match(await page.locator('#photonStorageNotice').innerText(),/quota failure/);
    await page.evaluate(()=>window.closeModal());
@@ -172,7 +179,9 @@ test('stale tabs refuse to overwrite newer saved DNA and can reload it',async()=
   const context=await browser.newContext(),a=await context.newPage(),b=await context.newPage();
   await visit(a);await visit(b);const before=await state(b),original=await b.locator('#se').inputValue();
   await a.locator('#se').fill(original+'A');await a.locator('#ap').click();const newer=await state(a);
+  await settled(a);
   await b.locator('#se').fill(original+'C');await b.locator('#ap').click();
+  await settled(b);
   assert.match(await b.locator('#photonStorageNotice').innerText(),/another tab/);
   assert.equal((await state(b)).memory,before.memory);
   assert.equal((await state(b)).saved,newer.saved);
@@ -188,10 +197,13 @@ test('missing storage module leaves the original database untouched',async()=>{
   await page.route('**/src/core/project-storage.mjs',route=>route.abort());
   await page.reload({waitUntil:'networkidle'});
   assert.match(await page.locator('#photonStorageNotice').innerText(),/modules could not load/);
-  assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),before.saved);
+  assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),before.legacy);
+  assert.equal((await state(page)).saved,before.saved);
   assert.equal(await page.locator('#photonBackup').isDisabled(),true);
   await page.locator('#se').fill('ACGT');await page.locator('#ap').click();
-  assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),before.saved);
+  await settled(page);
+  assert.equal(await page.evaluate(()=>localStorage.getItem(KEY)),before.legacy);
+  assert.equal((await state(page)).saved,before.saved);
  }finally{await browser.close();}
 });
 
@@ -201,11 +213,13 @@ test('saved DNA, nested annotations and commit heads survive a full browser rest
  try{
   context=await chromium.launchPersistentContext(profile,{headless:true});
   const page=context.pages()[0];await visit(page);
-  await page.evaluate(()=>{
-   W().features[0].qualifiers={source:{ids:['restart-regression']}};save();
+  await page.evaluate(async()=>{
+   W().features[0].qualifiers={source:{ids:['restart-regression']}};await save();
   });
   await page.locator('#se').fill((await page.locator('#se').inputValue())+'A');await page.locator('#ap').click();
+  await settled(page);
   page.once('dialog',d=>d.accept('restart snapshot'));await page.locator('#btnCommit').click();
+  await settled(page);
   const before=await state(page);await context.close();context=null;
   context=await chromium.launchPersistentContext(profile,{headless:true});
   const reopened=context.pages()[0];await visit(reopened);

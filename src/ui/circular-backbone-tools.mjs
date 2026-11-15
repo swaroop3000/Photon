@@ -85,7 +85,7 @@ export function renderCircularBackboneApply(){
    if(event.target?.id==='photonBackboneSource'&&pending)
      invalidate('Selected backbone changed. Review again.');
  });
- apply.onclick=()=>{
+ apply.onclick=async()=>{
    if(!pending||!checkbox.checked)return;
    const token=pending;
    if(token.identity!==host.identity()||token.definitions!==definitions.value||
@@ -98,7 +98,7 @@ export function renderCircularBackboneApply(){
    try{
      if(!globalThis.PhotonEditorHistory?.replaceConstruct)
        throw new Error('Undoable editor integration is unavailable');
-     const changed=globalThis.PhotonEditorHistory.replaceConstruct(token.replacement);
+     const changed=await globalThis.PhotonEditorHistory.replaceConstruct(token.replacement);
      invalidate();
      if(changed)host.message('Circular circuit assembled in working plasmid. Undo available; Commit separately.');
      else details.textContent='No changes to apply.';

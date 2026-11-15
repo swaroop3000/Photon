@@ -52,7 +52,7 @@ export function renderCircuitApply(){
  checkbox.onchange=()=>{apply.disabled=!checkbox.checked||!pending;};
  definitions.addEventListener('input',()=>{if(pending){invalidate();details.textContent='Circuit changed. Review again before applying.';}});
  root.addEventListener('input',()=>{if(pending){invalidate();details.textContent='Root changed. Review again before applying.';}});
- apply.onclick=()=>{
+ apply.onclick=async()=>{
    if(!pending||!checkbox.checked)return;
    const token=pending;
    if(token.definitions!==definitions.value||token.root!==root.value.trim()||
@@ -62,7 +62,7 @@ export function renderCircuitApply(){
    try{
      if(!globalThis.PhotonEditorHistory?.replaceConstruct)
        throw new Error('Undoable editor integration is not loaded');
-     const applied=globalThis.PhotonEditorHistory.replaceConstruct(token.replacement);
+     const applied=await globalThis.PhotonEditorHistory.replaceConstruct(token.replacement);
      invalidate();
      if(!applied){details.textContent='Circuit already matches current construct.';return;}
      // Host.render replaces DOM, so feedback goes through the editor host.

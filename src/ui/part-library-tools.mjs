@@ -51,7 +51,7 @@ export function renderPartLibrary(){
  field.setAttribute('aria-label','Reusable part library definitions');
  const key=KEY+host.identity();
  let saved=demo;
- try{saved=localStorage.getItem(key)??demo;}catch{}
+ try{saved=globalThis.PhotonLibraryStorage.getItem(key)??demo;}catch{}
  field.value=saved;
  field.style.marginTop='10px';
  const rootRow=document.createElement('div');rootRow.style.cssText='display:flex;align-items:center;gap:9px;margin:9px 0;flex-wrap:wrap';
@@ -100,9 +100,9 @@ export function renderPartLibrary(){
    }catch(error){result.textContent='Library rejected: '+error.message;}
  }
  preview.onclick=renderPreview;
- save.onclick=()=>{
+ save.onclick=async()=>{
    try{
-     const lib=getLibrary();localStorage.setItem(key,editorText(lib));
+     const lib=getLibrary();await globalThis.PhotonLibraryStorage.setItem(key,editorText(lib));
      result.textContent='Part library saved locally for this repository and branch.';
      exportRDF.hidden=true;latest=null;
    }catch(error){result.textContent='Save rejected: '+error.message;}

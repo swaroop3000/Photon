@@ -9,9 +9,9 @@ recovery records and downloaded files are the assets considered here.
 | Boundary | Current behavior | Remaining risk/control needed |
 | --- | --- | --- |
 | Imported files → UI | Schema/format/coordinate checks; display escaping; reviewed replacement | Systematic audit of remaining HTML/SVG interpolation and import paths |
-| Browser origin → stored genomes | localStorage active projects, separate library keys, IndexedDB recovery vault | Any script executing on the origin can access these plaintext values; no account isolation/encryption |
+| Browser origin → stored genomes | Active IndexedDB projects/libraries, retained legacy source and separate recovery vault | Any script executing on the origin can access these plaintext values; no account isolation/encryption |
 | Failed action → recovery vault | Recovery payload and catalog commit atomically; no automatic replay | Asynchronous capture can be interrupted before completion; browser eviction/device loss remain possible |
-| Storage migration | Exact-byte staging archives, source-change detection, checksum/read-back | Active asynchronous backend cutover and multi-key restore are unfinished |
+| Storage migration | Atomic project/library copy, revision CAS, retained source and a migration marker preventing silent stale fallback | General archive-file restore, reverse-migration procedure and independent cutover review remain open |
 | Application → network | Static application/module loading; source-download helpers fetch the current app URL | No network sandbox for user console scripts; hosted response policy and production settings require review |
 | Browser → exported files | Explicit user-triggered project/library/archive/recovery downloads | Exports contain plaintext DNA/metadata; storage outside the browser is under the user's control |
 | User console → application | `new Function` intentionally executes user-entered JavaScript with origin privileges | Console is not a sandbox; UI identifies its access. A constrained console/CSP design requires a separate decision |
@@ -51,9 +51,10 @@ implementation and tests, not an unverified header change.
 1. Independent review of all remaining HTML/SVG/XML rendering and import/export
    boundaries, including direct repository-bundle import and biological metadata.
 2. Define console trust/sandbox scope and implement a tested response-policy plan.
-3. Complete active storage migration and multi-writer coordination; verify recovery
-   under more browser/device failure modes. Browser restart is tested; power loss
-   and disk corruption are not simulated.
+3. Independently review the implemented active storage cutover, revision coordination
+   and release rollback procedure; verify recovery under more browser/device failure
+   modes. Browser restart, transaction abort and missing data are tested; power loss
+   and physical disk corruption are not simulated.
 4. Decide data-at-rest, retention, device sharing and supported sensitive-data scope.
    No clinical/regulated repository or encrypted multi-user service is provided.
 5. Verify hosted configuration, source/build provenance and rollback procedure with

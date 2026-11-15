@@ -1,111 +1,129 @@
-# Browser project storage and recovery
+# Active browser project storage — IndexedDB v1
 
-Photon continues to use the existing `locusPro_v1` localStorage key. This milestone
-does not change its on-disk JSON format, origin, project IDs or UI layout. A storage
-notice is added when a project cannot be loaded or saved.
+Photon now uses the `photon-projects` IndexedDB database for active projects and
+both known reusable-library namespaces. The existing interface is retained.
+This replaces the earlier synchronous localStorage backend; the separate
+`photon-project-recovery` vault remains available for recovery/archive copies.
+Serve Photon through HTTPS or localhost HTTP: migration fingerprints use WebCrypto.
+Storage remains specific to the browser origin; changing host, port or scheme
+requires an explicit export/import rather than an automatic cross-origin move.
 
-## Versioned archive and persistent recovery
+## Migration and source preservation
 
-**Recovery → Create local archive** copies saved projects plus all keys with the
-known `photon.parts.2.7:` and `photon.backbones.3.1:` prefixes into a version-1
-IndexedDB vault. It preserves each source string exactly, checks the project
-schema and a SHA-256 digest, and reads the archive back before reporting success.
-Unrelated application keys, theme and tutorial preferences are excluded. No
-localStorage values are removed or rewritten by this copy.
+On first successful opening, Photon validates the legacy `locusPro_v1` database,
+adds existing legacy defaults in memory, and copies projects plus all
+`photon.parts.2.7:` / `photon.backbones.3.1:` values in one IndexedDB transaction.
+Original strings are retained in migration metadata, with a source fingerprint.
+No original project/library localStorage values are deleted or rewritten. Source
+library strings are preserved as supplied; migration is not biological validation.
 
-This is a **migration staging archive**, not a switch of the active project backend.
-The existing synchronous UI still saves projects to localStorage. A safe active
-IndexedDB migration requires asynchronous command transactions and a coordinated
-cutover for the auxiliary libraries. That work remains open.
+Before starting cutover, Photon reserves a small non-genomic localStorage marker:
+`photon.active-indexeddb.v1:photon-projects`. This marker is deliberately retained
+if migration is interrupted. A missing active record with an existing marker
+requires explicit reviewed recovery; it must never silently reopen an older legacy
+copy. If localStorage is already completely full, the initial marker reservation
+can fail. Export the retained source, free a little space and perform reviewed
+recovery. Ordinary IndexedDB saves do not grow localStorage once the marker exists.
 
-Failed project saves now also attempt to store their recovery copy in IndexedDB.
-The notice says **Recovery copy saved on this device** only after the catalog and
-payload transaction completes. After reopening Photon, **Review recovery** offers
-the saved attempt for download; it never automatically applies it to projects.
-Use the existing confirmed **Restore backup** workflow to apply a valid recovered
-project backup. Original corrupt storage copies are downloadable diagnostic bytes.
+Existing active IndexedDB data is authoritative on reopening. If IndexedDB is
+unavailable, a future schema is encountered, or active data is missing/corrupt,
+Photon does not automatically fall back to the retained older localStorage data.
+It shows a protected temporary demo, or verified current data read-only when
+possible. The normal project-backup control is disabled for a temporary demo.
 
-If IndexedDB is denied, full, blocked or unavailable, main project saving retains
-its current behavior and in-memory recovery download remains available. A failure
-notice reports that persistent recovery could not be saved. A tab/process ending
-before the recovery transaction commits can still lose the attempted-state copy.
-Browser eviction, clearing site data and device failure can remove both stores;
-export files for a separate backup. Transaction completion is not a power-loss
-durability guarantee.
+Close older Photon tabs after cutover. An older application version can still
+write its legacy keys because it does not understand the new backend. Observed
+legacy changes block normal writes and are preserved for review. The original
+migration source and current retained legacy copy can be downloaded separately
+through **Recovery**. A reviewed source restore checks that the source has not
+changed since review.
 
-The vault retains at most five distinct archives and twenty distinct recovery
-records. It refuses new distinct copies at capacity, keeping existing copies
-intact. Download and explicitly **Delete copy** to free space. Each deletion
-requires confirmation and changes only that saved copy, never current projects.
-No automatic pruning occurs. Repeated identical attempts in one session deduplicate.
-Archived auxiliary values are opaque source copies; their validity is not inferred.
+## Commit acknowledgement and concurrency
 
-Archive downloads use `photon/browser-storage-archive/1` and contain projects plus
-library source entries. They are not the older project-only backup format and are
-not yet accepted by **Restore backup**. Multi-key archive restore must be designed
-as part of the coordinated migration; export individual libraries with their
-existing controls for today's import workflows. Do not delete live storage based
-solely on an archive copy.
+All main project saves pass through an asynchronous command coordinator. The
+interface shows **Saving projects…** and prevents overlapping user actions while
+transactions are pending. Rendering and success messages are deferred until the
+backend acknowledges a commit. Consecutive synchronous legacy snapshots within
+one action are coalesced to their final snapshot. On failure, queued dependent
+candidates are discarded, the in-memory database returns to the last committed
+checkpoint, and the failure is shown without a success acknowledgement.
 
-## Opening projects
+DNA Apply/Undo/Redo, explicit edit batches and construct replacements update
+history only after saving succeeds. Their public methods return promises; callers
+must await them. Overlapping DNA API operations are refused rather than guessing
+which coordinates or undo stack they should use. Part/backbone save handlers also
+await commit; failed library saves retain their edited text and attempted bytes.
 
-The app reads and validates working snapshots, annotations, branches and history
-before initializing the existing UI modules. Existing legacy defaults are added
-in memory; opening a valid existing database does not rewrite it. A new empty
-profile seeds a demo through one validated write.
+The active document has a monotonically increasing revision. Project and library
+transactions read and compare the expected revision inside the same readwrite
+transaction that commits their changes. Stale writers are rejected, including
+simultaneous direct calls from one client. Library writes advance the shared
+revision. This is conservative: unrelated edits from another tab still require
+reload/review; there is no automatic merge or live collaboration service.
 
-Malformed JSON, invalid references or denied reads never cause a demo to replace
-the existing stored value. Instead, a temporary demo is displayed with saving
-blocked. **Download original stored data** preserves the exact original bytes
-when they were readable. This raw diagnostic file is not necessarily a valid
-Photon backup; do not assume it can be restored without repair. The regular
-project backup control is disabled to avoid exporting the temporary demo as if
-it were the recovered projects.
+Project/library migration and combined project/library writes are atomic across
+all active stores. Revision/data/cache acknowledgements occur on transaction
+completion, not individual request success. Legacy source-change checks span
+localStorage and IndexedDB and cannot form one atomic cross-store transaction;
+old versions must be closed. A later legacy write is detected on the next check.
 
-Use **Restore backup** with a valid Photon backup to replace corrupt projects,
-after downloading the original data and confirming replacement. If storage
-access itself was denied, restore access and reload first: Photon cannot safely
-overwrite a value it was unable to read. Previously accepted records that fail
-current semantic validation are preserved for recovery, not silently repaired.
+Programmatic callers can await `PhotonProjects.whenIdle()` for the command queue
+or inspect `PhotonProjects.readSnapshot()` for a consistent committed snapshot.
+`save()` returns a promise. Reading a newer snapshot does not silently advance a
+stale writer's expected revision. Reload to adopt another tab's changes.
 
-## Failed actions
+## Recovery and backups
 
-Main project saves serialize and validate the candidate database, check that the
-stored bytes match the last observed value, and use a single localStorage write.
-On failure, the in-memory project database returns to its last successful
-checkpoint. Callers receive a thrown `ProjectStorageError`, stopping subsequent
-success messages. Apply, Undo, Redo, batch edits and construct replacement update
-their history only after saving succeeds. A failed Commit does not leave a new
-in-memory branch head.
+**Backup projects** exports a committed IndexedDB snapshot using the existing
+`photon/local-project-backup/1` format. **Restore backup** validates the file and
+requires replacement confirmation. It rejects overlap with another pending action.
+A restore cannot be followed by a stale queued snapshot that overwrites it.
 
-The notice offers **Download unsaved recovery**: a version-1 project backup
-containing the attempted database state. The immediate download is held in memory;
-only the latest serializable failed attempt is retained there. Export it before
-closing/reloading unless persistent recovery has explicitly reported success.
-Validation failures can produce diagnostic copies that need repair before restore.
-Browser unload prompts are best-effort and do not protect against process
-termination, device failure or clearing site data.
+If a migration was interrupted or active data disappeared, use **Recovery →
+Review retained source for restore** only after reviewing/exporting the available
+copies. The retained source may be older than the latest lost active data. Explicit
+confirmation is required to replace projects and matching library values. Other
+library keys are retained. Invalid retained project data is refused; use a valid
+project backup instead. A blocked existing active record and its libraries are
+preserved as repair metadata when reviewed recovery replaces them.
 
-Free storage space and retry the original action to persist it. The failed action
-has been rolled back; a later successful action does not automatically replay it.
-Tests exercise actual Chromium quota exhaustion using isolated synthetic data,
-including a 1 Mb construct and retry after space is freed.
+Failed saves offer an immediate recovery download and attempt a persistent copy
+in the separate IndexedDB recovery vault. Success is reported only after that
+vault transaction commits. Reopening Photon offers saved attempts for download;
+they are never silently applied. Project attempts use the existing project backup
+format. Failed library/combined/abandoned-command records are diagnostic formats
+preserving their intended bytes; do not treat them as ordinary project backups.
 
-## Multiple tabs and limits
+**Create local archive** copies a consistent active project/library snapshot into
+the recovery vault and verifies its checksum by reading it back. It exports
+`photon/browser-storage-archive/1`, including known library keys. That format is
+not yet accepted by the project-only Restore backup control; general multi-key
+archive-file restore remains separate work. Use the existing individual library
+export/import controls alongside project backups when moving data today.
 
-If another tab's newer value is observed before a write, the stale tab refuses to
-overwrite it. Download its attempted state, then reload to load the newer value.
-There is no automatic merge. localStorage does not provide compare-and-swap:
-two tabs writing in the narrow interval after their checks can still race. Atomic
-writer coordination and versioned IndexedDB migration remain future work.
+The vault keeps at most five distinct archives and twenty recovery copies. It
+refuses new copies at capacity without deleting old ones. Download and explicitly
+confirm **Delete copy** to free room. If recovery persistence fails, download the
+in-memory attempt before closing. Transaction completion does not guarantee
+survival of power loss, device failure, browser eviction or cleared site data.
 
-Each save validates/serializes the database and retains one JSON checkpoint.
-This adds memory and synchronous work proportional to stored project/history size;
-it is not a large-genome storage solution. Backup import still has a 20 MB file
-cap and 500-project limit; live validation does not impose these import caps.
+## Limits and rollback boundaries
 
-Part and backbone libraries, theme and tutorial preferences use separate keys.
-They are not part of the project-only checkpoint or failed-action payload. The
-staging archive includes the two known library namespaces, while theme/tutorial
-preferences remain excluded. This milestone adds no encryption, remote sync,
-clinical storage guarantees or automatic repair.
+This is local browser storage with no encryption, account isolation, remote
+backup or clinical guarantees. Whole-project snapshots still require validation,
+serialization and memory proportional to stored history size. The 1 Mb browser
+regression is not a whole-genome performance or quota guarantee. Actual IndexedDB
+quota exhaustion is simulated through transaction faults; the tests separately
+fill real localStorage and verify active IndexedDB editing continues.
+
+Existing project-backup import limits remain 20 MB / 500 projects. Live storage
+can exceed those import limits; larger recovery/export workflows need further
+engineering. Archive read limits and browser/device budgets also remain bounded.
+
+Failure rollback and migration source retention are tested. **Automatic reverse
+migration to an older software version is not implemented.** Do not switch to an
+old app and assume its retained localStorage snapshot is current. Export latest
+projects and libraries first; an old backend may not have sufficient quota to hold
+newer data. Do not manually delete the migration marker to bypass recovery checks.
+Independent cutover/rollback review and broader browser validation remain required
+before release approval.

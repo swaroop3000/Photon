@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {settled} from './storage-helpers.mjs';
 const URL='http://127.0.0.1:8765/';
 test('editor opens and dynamic modules connect to interface',async()=>{
  const browser=await chromium.launch({headless:true});
@@ -19,16 +20,20 @@ test('editor opens and dynamic modules connect to interface',async()=>{
    if(await editor.count()===0){
      const button=page.getByRole('button',{name:/code/i}).first();
      await button.click();
+  await settled(page);
    }
    await editor.waitFor();
    const original=await editor.inputValue();
    assert.ok(original.length>0,'Seeded DNA construct was expected');
    await editor.fill(original+'A');
    await page.locator('#ap').click();
+  await settled(page);
    assert.equal(await page.locator('#se').inputValue(),original+'A');
    await page.locator('#ub').click();
+  await settled(page);
    assert.equal(await page.locator('#se').inputValue(),original);
    await page.locator('#rb').click();
+  await settled(page);
    assert.equal(await page.locator('#se').inputValue(),original+'A');
    assert.deepEqual(errors,[]);
  } finally {await browser.close();}
@@ -41,11 +46,14 @@ test('Primer and Cloning tabs load independently without script exceptions',asyn
    await page.goto(URL,{waitUntil:'networkidle'});
    await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
+  await settled(page);
    await page.locator('.tab[data-tool="primers"]').click();
+  await settled(page);
    await page.locator('#photonPrimersV17').waitFor();
    await page.locator('#photonPrimerDesignV18').waitFor();
    await page.locator('#photonPrimerMismatchV19').waitFor();
    await page.locator('.tab[data-tool="cloning"]').click();
+  await settled(page);
    await page.locator('#photonCloningV14').waitFor();
    await page.locator('#photonGibsonV15').waitFor();
    await page.locator('#photonGoldenGateV16').waitFor();
@@ -69,8 +77,10 @@ test('origin-spanning circular annotation draws two clickable map segments',asyn
   await page.locator('#mapView #photonWrappedFeatures path').first().waitFor();
   assert.equal(await page.locator('#mapView #photonWrappedFeatures path').count(),2);
   await page.locator('.maptab[data-v="linear"]').click();
+  await settled(page);
   assert.equal(await page.locator('#mapView #photonWrappedFeatures rect').count(),2);
   await page.locator('.maptab[data-v="circular"]').click();
+  await settled(page);
   assert.equal(await page.locator('#mapView #photonWrappedFeatures path').count(),2);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -90,17 +100,23 @@ test('circular feature creation, editing, and GenBank roundtrip preserve origin 
    host.render();
   });
   await page.locator('.tab[data-tool="features"]').click();
+  await settled(page);
   const length=await page.locator('#se').inputValue().then(s=>s.length);
   await page.getByText('+ Add feature').click();
+  await settled(page);
   await page.locator('#nn').fill('Wrap test');
   await page.locator('#ns').fill(String(length-4));
   await page.locator('#ne').fill('3');
   await page.locator('#na').click();
+  await settled(page);
   await page.locator('.frow').filter({hasText:'Wrap test'}).click();
+  await settled(page);
   await page.locator('#editSel').click();
+  await settled(page);
   await page.locator('#efn').fill('Wrapped edited');
   await page.locator('#efe').fill('4');
   await page.locator('#efv').click();
+  await settled(page);
   const result=await page.evaluate(()=>{
    const w=window.PhotonEditorBridgeHost.working();
    const exported=toGenBank(w),imported=parseGenBank(exported);
@@ -133,6 +149,7 @@ test('safe edit inside circular annotation gap preserves wrapped feature and und
   });
   await page.locator('#se').fill('AACCGGGGTTAACC');
   await page.locator('#ap').click();
+  await settled(page);
   let state=await page.evaluate(()=>({
     seq:window.PhotonEditorBridgeHost.working().seq,
     f:window.PhotonEditorBridgeHost.working().features[0]
@@ -140,6 +157,7 @@ test('safe edit inside circular annotation gap preserves wrapped feature and und
   assert.equal(state.seq,'AACCGGGGTTAACC');
   assert.deepEqual([state.f.start,state.f.end],[12,3]);
   await page.locator('#ub').click();
+  await settled(page);
   state=await page.evaluate(()=>({
     seq:window.PhotonEditorBridgeHost.working().seq,
     f:window.PhotonEditorBridgeHost.working().features[0]
@@ -200,6 +218,7 @@ test('external GenBank import preserves annotations and refuses unsupported join
   });
   await page.locator('#impApply').waitFor();
   await page.locator('#impApply').click();
+  await settled(page);
   await page.waitForFunction(()=>window.PhotonEditorBridgeHost.working().name==='EXAMPLE02');
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(before.topology,'circular');
@@ -238,6 +257,7 @@ test('SBOL3 N-Triples export and reviewed file import preserve circular features
   });
   await page.locator('#impApply').waitFor();
   await page.locator('#impApply').click();
+  await settled(page);
   const out=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(out.name,input.name);
   assert.equal(out.seq,input.seq);
@@ -256,8 +276,10 @@ test('Builder previews multi-component SBOL3 and exposes graph download',async()
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   await page.locator('#photonSbol3BuilderV26').waitFor();
   await page.getByRole('button',{name:'Preview SBOL 3 assembly'}).click();
+  await settled(page);
   await page.getByText('Design: PhotonAssembly', {exact:false}).waitFor();
   assert.equal(await page.getByRole('button',{name:'Export SBOL 3 N-Triples'}).isVisible(),true);
   assert.deepEqual(errors,[]);
@@ -273,20 +295,25 @@ test('reusable library previews nested DNA graph, persists, and rejects cycles',
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   await page.locator('#photonPartsV27').waitFor();
   await page.getByRole('button',{name:'Preview hierarchy'}).click();
+  await settled(page);
   const output=page.locator('#photonPartsPreview');
   await output.getByText('circuit', {exact:false}).first().waitFor();
   assert.match(await output.innerText(),/promoter/);
   assert.match(await output.innerText(),/cassette/);
   assert.equal(await page.getByRole('button',{name:'Export hierarchy SBOL 3'}).isVisible(),true);
   await page.getByRole('button',{name:'Save part library'}).click();
+  await settled(page);
   await page.reload({waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit/);
   await page.locator('#photonPartsDefinitions').fill('assembly A B+\nassembly B A+');
   await page.getByRole('button',{name:'Preview hierarchy'}).click();
+  await settled(page);
   assert.match(await page.locator('#photonPartsPreview').innerText(),/Circular assembly reference/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -302,19 +329,24 @@ test('visual circuit designer inserts, reverses, moves, removes without editing 
    await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
    await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
    const visual=page.locator('#photonCircuitVisualV28');
    await visual.waitFor();
    const cards=visual.locator('#photonCircuitTrack > div');
    assert.equal(await cards.count(),3);
    await visual.locator('#photonCircuitPartPicker').selectOption('promoter');
    await visual.getByRole('button',{name:'Insert component'}).click();
+  await settled(page);
    assert.equal(await cards.count(),4);
    assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit cassette\+ terminator\+ cassette- promoter\+/);
    await visual.getByRole('button',{name:'Reverse promoter'}).click();
+  await settled(page);
    assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/promoter-/);
    await visual.getByRole('button',{name:'Move promoter left'}).click();
+  await settled(page);
    assert.match(await page.locator('#photonPartsDefinitions').inputValue(),/assembly circuit cassette\+ terminator\+ promoter- cassette-/);
    await visual.getByRole('button',{name:'Remove promoter'}).click();
+  await settled(page);
    assert.equal(await cards.count(),3);
    assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
    assert.deepEqual(errors,[]);
@@ -331,14 +363,17 @@ test('reviewed circuit application replaces working construct and undo restores 
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   await page.locator('#photonCircuitApplyV29').waitFor();
   const panel=page.locator('#photonCircuitApplyV29');
   await panel.getByRole('button',{name:'Review plasmid replacement'}).click();
+  await settled(page);
   assert.match(await panel.locator('#photonCircuitApplyReview').innerText(),/Replacement: circuit/);
   const apply=panel.getByRole('button',{name:'Apply reviewed circuit'});
   assert.equal(await apply.isEnabled(),false);
   await panel.locator('#photonCircuitApplyConfirm').check();
   await apply.click();
+  await settled(page);
   const changed=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(changed.name,'circuit');
   assert.equal(changed.topology,'linear');
@@ -347,10 +382,13 @@ test('reviewed circuit application replaces working construct and undo restores 
   assert.deepEqual(changed.features.map(f=>f.strand),[1,-1,1,1,-1]);
   assert.notEqual(changed.seq,before.seq);
   await page.locator('.tab[data-tool="features"]').click();
+  await settled(page);
   await page.locator('#ub').click();
+  await settled(page);
   const restored=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.deepEqual(restored,before);
   await page.locator('#rb').click();
+  await settled(page);
   const again=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.deepEqual(again,changed);
   assert.deepEqual(errors,[]);
@@ -365,8 +403,10 @@ test('circuit application rejects stale reviews after circuit edits',async()=>{
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonCircuitApplyV29');
   await panel.getByRole('button',{name:'Review plasmid replacement'}).click();
+  await settled(page);
   await page.locator('#photonPartsDefinitions').fill('part p ATGC\nassembly circuit p+');
   assert.equal(await panel.getByRole('button',{name:'Apply reviewed circuit'}).isVisible(),false);
   const unchanged=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
@@ -393,15 +433,18 @@ test('reviewed circular backbone insertion preserves features and supports compl
   });
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonCircularBackboneV30');
   await panel.waitFor();
   await panel.locator('#photonBackboneBoundary').fill('6');
   await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  await settled(page);
   assert.match(await panel.locator('#photonBackboneReview').innerText(),/Result: pBackbone/);
   const apply=panel.getByRole('button',{name:'Apply reviewed circular assembly'});
   assert.equal(await apply.isEnabled(),false);
   await panel.locator('#photonBackboneConfirm').check();
   await apply.click();
+  await settled(page);
   const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(after.name,'pBackbone');
   assert.equal(after.topology,'circular');
@@ -419,9 +462,12 @@ test('reviewed circular backbone insertion preserves features and supports compl
   assert.equal(gb.topology,'circular');
   assert.deepEqual(gb.features,after.features);
   await page.locator('.tab[data-tool="features"]').click();
+  await settled(page);
   await page.locator('#ub').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
   await page.locator('#rb').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -440,9 +486,11 @@ test('circular backbone review refuses insertion that splits an existing feature
   });
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonCircularBackboneV30');
   await panel.locator('#photonBackboneBoundary').fill('2');
   await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  await settled(page);
   assert.match(await panel.locator('#photonBackboneReview').innerText(),/split backbone feature: protected/);
   assert.equal(await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).isVisible(),false);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
@@ -464,10 +512,12 @@ test('Photon 3.1 selects saved backbone, previews junctions and applies to unrel
    window.PhotonEditorBridgeHost.render();
   });
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const lib=page.locator('#photonBackboneLibraryV31');
   await lib.waitFor();
   await lib.locator('#photonBackboneSaveId').fill('savedBase');
   await lib.getByRole('button',{name:'Save current backbone'}).click();
+  await settled(page);
   assert.match(await lib.locator('#photonBackboneLibraryStatus').innerText(),/Saved circular backbone/);
   const selected=lib.locator('#photonBackboneSource');
   await selected.selectOption('savedBase');
@@ -480,6 +530,7 @@ test('Photon 3.1 selects saved backbone, previews junctions and applies to unrel
   const panel=page.locator('#photonCircularBackboneV30');
   await panel.locator('#photonBackboneBoundary').fill('6');
   await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  await settled(page);
   const report=await panel.locator('#photonBackboneReview').innerText();
   assert.match(report,/Selected backbone: BackboneA/);
   assert.match(report,/Current working plasmid: DifferentLinear/);
@@ -487,6 +538,7 @@ test('Photon 3.1 selects saved backbone, previews junctions and applies to unrel
   assert.match(report,/Curated restriction sites before/);
   await panel.locator('#photonBackboneConfirm').check();
   await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).click();
+  await settled(page);
   const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(after.name,'BackboneA');
   assert.equal(after.topology,'circular');
@@ -494,9 +546,12 @@ test('Photon 3.1 selects saved backbone, previews junctions and applies to unrel
   assert.equal(after.features[0].name,'ori');
   assert.equal(after.features[0].start,1);
   await page.locator('.tab[data-tool="features"]').click();
+  await settled(page);
   await page.locator('#ub').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
   await page.locator('#rb').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -514,11 +569,14 @@ test('Photon 3.1 invalidates review when selected backbone changes',async()=>{
     window.PhotonEditorBridgeHost.render();
   });
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   await page.locator('#photonBackboneSaveId').fill('saved');
   await page.getByRole('button',{name:'Save current backbone'}).click();
+  await settled(page);
   const panel=page.locator('#photonCircularBackboneV30');
   await panel.locator('#photonBackboneBoundary').fill('5');
   await panel.getByRole('button',{name:'Review circular plasmid assembly'}).click();
+  await settled(page);
   assert.equal(await panel.getByRole('button',{name:'Apply reviewed circular assembly'}).isVisible(),true);
   await panel.locator('#photonBackboneSource').selectOption('current');
   await panel.locator('#photonBackboneSource').selectOption('saved');
@@ -543,15 +601,18 @@ test('Photon 3.2 runs advisory construct QC and downloads versioned JSON without
   });
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonConstructQCV32');
   await panel.waitFor();
   await panel.getByRole('button',{name:'Run construct QC'}).click();
+  await settled(page);
   assert.match(await panel.locator('#photonQCResult').innerText(),/QCDemo/);
   assert.match(await panel.locator('#photonQCResult').innerText(),/Homopolymer runs/);
   assert.match(await panel.locator('#photonQCWarnings').innerText(),/CDS_INTERNAL_STOP/);
   assert.match(await panel.locator('#photonQCWarnings').innerText(),/HOMOPOLYMER/);
   const downloadPromise=page.waitForEvent('download');
   await panel.getByRole('button',{name:'Download QC JSON'}).click();
+  await settled(page);
   const download=await downloadPromise;
   assert.equal(download.suggestedFilename(),'photon-qc-QCDemo.json');
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
@@ -565,12 +626,15 @@ test('Photon 3.2 refuses to export a report after the working construct changes'
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonConstructQCV32');
   await panel.getByRole('button',{name:'Run construct QC'}).click();
+  await settled(page);
   const exportButton=panel.getByRole('button',{name:'Download QC JSON'});
   assert.equal(await exportButton.isVisible(),true);
   await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
   await exportButton.click();
+  await settled(page);
   assert.match(await panel.locator('#photonQCResult').innerText(),/Working construct changed/);
   assert.equal(await exportButton.isVisible(),false);
  }finally{await browser.close();}
@@ -592,10 +656,12 @@ test('Photon 3.3 translates six frames, reports CDS and downloads versioned JSON
   });
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonTranslationV33');
   await panel.waitFor();
   await panel.locator('#photonOrfMinV33').fill('1');
   await panel.getByRole('button',{name:'Analyze translation'}).click();
+  await settled(page);
   assert.match(await panel.locator('#photonTranslationSummary').innerText(),/Six reading frames/);
   assert.match(await panel.locator('#photonTranslationSummary').innerText(),/1 complete ORF/);
   assert.match(await panel.locator('#photonFrameViewV33').innerText(),/Protein preview: MK\*/);
@@ -604,6 +670,7 @@ test('Photon 3.3 translates six frames, reports CDS and downloads versioned JSON
   assert.match(await panel.locator('#photonFrameViewV33').innerText(),/Frame -1/);
   const downloadPromise=page.waitForEvent('download');
   await panel.getByRole('button',{name:'Download translation JSON'}).click();
+  await settled(page);
   const download=await downloadPromise;
   assert.equal(download.suggestedFilename(),'photon-translation-TranslationDemo.json');
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
@@ -617,12 +684,15 @@ test('Photon 3.3 rejects stale translation report downloads after DNA changes',a
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   await page.locator('.tab[data-tool="builder"]').click();
+  await settled(page);
   const panel=page.locator('#photonTranslationV33');
   await panel.getByRole('button',{name:'Analyze translation'}).click();
+  await settled(page);
   const download=panel.getByRole('button',{name:'Download translation JSON'});
   assert.equal(await download.isVisible(),true);
   await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
   await download.click();
+  await settled(page);
   assert.match(await panel.locator('#photonTranslationSummary').innerText(),/Construct changed/);
   assert.equal(await download.isVisible(),false);
  }finally{await browser.close();}
@@ -644,12 +714,14 @@ test('Photon 3.4 exports request and accepts template-validated Primer3 results'
    });
    const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
    await page.locator('.tab[data-tool="primers"]').click();
+  await settled(page);
    const panel=page.locator('#photonPrimer3V34');
    await panel.waitFor();
    await panel.locator('#photonPrimer3MinV34').fill('40');
    await panel.locator('#photonPrimer3MaxV34').fill('65');
    const downloadEvent=page.waitForEvent('download');
    await panel.getByRole('button',{name:'Export Primer3 request'}).click();
+  await settled(page);
    const download=await downloadEvent;
    assert.equal(download.suggestedFilename(),'primer3-request.json');
    const fixture=await page.evaluate(()=>{
@@ -684,6 +756,7 @@ test('Photon 3.4 rejects a stale Primer3 result after template change',async()=>
    await page.goto(URL,{waitUntil:'networkidle'});
    await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    await page.locator('.tab[data-tool="primers"]').click();
+  await settled(page);
    const panel=page.locator('#photonPrimer3V34');
    await panel.locator('#photonPrimer3MinV34').fill('80');
    await panel.locator('#photonPrimer3MaxV34').fill('300');
@@ -694,6 +767,7 @@ test('Photon 3.4 rejects a stale Primer3 result after template change',async()=>
    });
    const requestDownload=page.waitForEvent('download');
    await panel.getByRole('button',{name:'Export Primer3 request'}).click();
+  await settled(page);
    assert.equal((await requestDownload).suggestedFilename(),'primer3-request.json');
    await page.evaluate(()=>{window.PhotonEditorBridgeHost.working().seq+='A';});
    await panel.locator('#photonPrimer3ResultFileV34').setInputFiles({
@@ -711,21 +785,26 @@ test('editor commit boundary isolates undo and preserves committed annotations',
    await page.goto(URL,{waitUntil:'networkidle'});
    await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
    if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
+  await settled(page);
    const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
    const idBefore=await page.evaluate(()=>window.PhotonEditorBridgeHost.identity());
    await page.locator('#se').fill(before.seq+'A');
    await page.locator('#ap').click();
+  await settled(page);
    await page.evaluate(()=>commit('DNA integration regression fixture'));
    const idAfter=await page.evaluate(()=>window.PhotonEditorBridgeHost.identity());
    assert.notEqual(idAfter,idBefore);
    const committed=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
    assert.equal(committed.seq,before.seq+'A');
    await page.locator('#ub').click();
+  await settled(page);
    assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),committed);
    // Undo within the new commit boundary must work, but not cross it.
    await page.locator('#se').fill(committed.seq+'C');
    await page.locator('#ap').click();
+  await settled(page);
    await page.locator('#ub').click();
+  await settled(page);
    assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),committed);
    const committedStored=await page.evaluate(()=>structuredClone(head().snap));
    assert.deepEqual(committedStored,committed);
@@ -750,6 +829,7 @@ test('invalid annotated deletion is rejected without mutating working DNA',async
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('#se').fill('AACCTTAACC');
   await page.locator('#ap').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -773,14 +853,17 @@ test('disjoint substitutions preserve intervening features in the browser editor
   const before=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   await page.locator('#se').fill('ATCCGGTTAATC');
   await page.locator('#ap').click();
+  await settled(page);
   const after=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.deepEqual(after.features.map(f=>[f.start,f.end]),[[5,8],[2,2],[11,11]]);
   assert.equal(after.features[0].affected,undefined);
   assert.equal(after.features[1].affected,true);
   assert.equal(after.features[2].affected,true);
   await page.locator('#ub').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
   await page.locator('#rb').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -794,10 +877,12 @@ test('missing DNA module fails closed instead of running unsafe sequence-only fa
   await page.goto(URL,{waitUntil:'networkidle'});
   await page.evaluate(()=>{if(document.getElementById('modalBg')?.classList.contains('open'))window.closeModal();});
   if(await page.locator('#se').count()===0)await page.getByRole('button',{name:/code/i}).first().click();
+  await settled(page);
   const original=await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working()));
   assert.equal(await page.evaluate(()=>Boolean(window.PhotonEditorBridgeReady)),false);
   await page.locator('#se').fill(original.seq+'A');
   await page.locator('#ap').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),original);
  }finally{await browser.close();}
 });
@@ -824,8 +909,10 @@ test('explicit mixed indel batch creates one reversible construct revision',asyn
   assert.equal(after.seq,'AAGGGTTTTAACC');
   assert.deepEqual(after.features.map(f=>[f.start,f.end]),[[1,2],[4,5],[11,13]]);
   await page.locator('#ub').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),before);
   await page.locator('#rb').click();
+  await settled(page);
   assert.deepEqual(await page.evaluate(()=>structuredClone(window.PhotonEditorBridgeHost.working())),after);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
