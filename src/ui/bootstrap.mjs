@@ -3,6 +3,8 @@ import {createIndexedProjectStorage} from '../core/indexed-project-storage.mjs';
 import {createProjectCommands} from '../core/project-commands.mjs';
 import {interpretCDS} from '../core/cds-semantics.mjs';
 import {sequenceWindow} from '../core/sequence-window.mjs';
+import {curatedDigest,curatedRestrictionSites} from '../core/curated-digest.mjs';
+globalThis.PhotonCuratedDigest={digest:curatedDigest,sites:curatedRestrictionSites};
 globalThis.PhotonSequenceWindow=sequenceWindow;
 globalThis.PhotonCDS={interpret:interpretCDS};
 const legacyStorage={get length(){return localStorage.length;},key:i=>localStorage.key(i),getItem:key=>localStorage.getItem(key)};

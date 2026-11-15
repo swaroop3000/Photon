@@ -15,7 +15,8 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 ## 2. Cloning
 - [x] Deterministic tests for EcoRI/PstI cut offsets, restriction-ligation and Golden Gate overhang junctions.
 - [x] Add fixed additional BamHI, HindIII, EcoRV, SmaI and NotI recognition/cut/ligation reference regression vectors.
-- [ ] Verify the full curated enzyme registry against an authoritative reference, including orientation and ambiguous bases.
+- [x] Verify all 28 legacy UI enzyme definitions and 3,118 exact-ACGT digest vectors against Biopython 1.86, both Type IIS orientations, terminal-cut refusal and circular-origin rotations (12,358 assertions). Repair legacy BsaI/BsmBI offsets and prevent linear cut wrapping.
+- [ ] Broader ambiguous-recognition/sequence policies and chemistry validation; the curated exact-ACGT path refuses ambiguous DNA explicitly. The separate seven-enzyme ligation model is unchanged.
 - [x] Differential-check all seven core registry definitions, linear cut positions and overhang type/length against Biopython 1.86; check ordered prepared-fragment overlap assembly against a known synthetic target. This does not validate Gateway, enzyme chemistry, methylation or yields.
 - [ ] Test Gibson and Gateway against independently prepared sequence fixtures.
 - [ ] Chemistry-dependent assumptions (methylation, star activity, efficiency and yield) require a separate scope: simulator does not model them.

@@ -167,3 +167,19 @@ Photon now supports **actual Primer3 pair design** using the maintained **primer
 The engine has a separate **Real Primer3 engine integration** GitHub Actions workflow. It installs the pinned Python dependency, runs Primer3 against a **synthetic fixture** (not user DNA), and validates the returned primer pairs with Photon. The previous **heuristic** candidate selector remains available and is explicitly distinguished from Primer3.
 
 **Limitations:** This release requires local Python and an explicit file exchange rather than one-click browser execution; there is no unattended server request, WASM engine, global specificity analysis, reference-genome search, or guarantee of laboratory primer performance. Only linear A/C/G/T templates (40–1,000,000 bases) are supported in this handoff. Actual thermodynamic output depends on the specified Primer3 configuration and does not substitute experimental PCR validation. Imported JSON metadata is not cryptographically signed; Photon validates its internal consistency and template matches but cannot prove its origin from Primer3. Do not upload private sample sequences to third-party services without appropriate permissions.
+
+## Curated legacy digest panel — November 15 audit
+
+The 28-enzyme legacy Analyze/cloning digest panels now use a separate exact-ACGT
+curated mapper, verified against Biopython 1.86. It records both-strand offsets
+for Type II and BsaI/BsmBI Type IIS sites. Reverse Type IIS recognition uses the
+bottom-strand offset to locate the forward top-strand cut. Linear sites need
+both cuts strictly inside the molecule; incomplete/terminal cuts are omitted.
+Circular coordinates wrap modulo length. Fragment sizes are top-strand lengths,
+not duplex reaction products. Ambiguous DNA is explicitly unavailable. Unique
+cutters count actual supported cuts in both orientations.
+
+The seven-enzyme modular restriction-ligation API and map overlay retain their
+existing scope. This audit does not broaden ligation chemistry or model enzyme
+activity, methylation, star effects or yield. See `curated-enzyme-validation.json`
+for 3,118 vectors/12,358 assertions and the validation report for regressions.

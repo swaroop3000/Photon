@@ -1,5 +1,18 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: complete UI enzyme cut audit — November 15, 2026
+
+- Continues `107b200`. `curated-digest.mjs` models all 28 UI enzymes with explicit
+  both-strand cut offsets. Legacy Analyze/cloning digest and unique-cutter paths
+  now use it; the seven-enzyme modular ligation model remains separate.
+- Fixed actual Type IIS bugs: BsaI/BsmBI cut outside the recognition site, reverse
+  top cuts use the bottom offset, and incomplete linear cuts cannot wrap around.
+  Ambiguous DNA yields an explicit unavailable diagnostic instead of exact fragments.
+- Biopython 1.86 verifies all definitions and 3,118 linear/circular/origin/orientation
+  vectors, 12,358 assertions. Four core and two browser regression tests pass;
+  all 262 Node tests and build pass. See the curated enzyme validation report.
+- No methylation, star activity, yields or laboratory success prediction is added.
+
 ## Latest: navigable bounded genome display — November 15, 2026
 
 - Continues `7954c01`. `sequence-window.mjs` projects at most 6,000 bases with
