@@ -35,10 +35,12 @@ This is a **review checklist**, not a release approval. The Genome Compiler feat
 - [x] Stage a versioned archive preserving exact project/library source strings, with checksums and read-back verification. Archives now read committed active IndexedDB snapshots; general archive-file restore remains unfinished.
 - [x] Persist failed-attempt recovery records with catalog/payload atomicity; verify restart/export, aborted transaction rollback, concurrent capacity enforcement, future-schema refusal, corrupt-payload rejection and unavailable IndexedDB behavior. Retention refuses new copies at capacity without deleting existing copies. Persistence is reported only after transaction completion; browser eviction/device loss remain possible.
 - [ ] Extend collection import beyond the supported subset and provide complete provenance review and storage-quota migration.
-- [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, multiline and repeated qualifiers, translation tables, sequence ambiguity handling.
-- [x] Support wrapped quoted prose/translation and doubled-quote escapes, reject unterminated/repeated qualifiers and duplicate label export, preserve quoted feature names. Fix LOCUS fixed-column fields so independent readers retain topology. General compound joins, repeated/valueless qualifiers and translation-table interpretation remain open.
+- [ ] Complete INSDC: compound exon joins, fuzzy/remote locations, broader translation tables, sequence ambiguity handling and original header/source preservation.
+- [x] Support wrapped quoted prose/translation and doubled-quote escapes, reject unterminated qualifiers and duplicate label export, preserve quoted feature names. Fix LOCUS fixed-column fields so independent readers retain topology. General compound joins and broader INSDC semantics remain open.
 - [x] Generate two synthetic GenBank records independently with Biopython 1.86 and cross-check round-trip locations, topology, qualifiers and extracted feature sequences (including reverse origin-spanning features); parser warnings fail the check. This does not satisfy the real-record dataset item below.
-- [ ] Interoperability fixtures from independently validated real records and cross-checks with Biopython / INSDC tools.
+- [x] First pinned public real-record fixture: pBR322 J01749.1; independently compare all 48 non-source annotations, qualifiers and extracted sequences, three CDS peptides and 270 table-1/11 vectors with Biopython 1.86 (475 assertions). This is one plasmid, not broad dataset acceptance.
+- [x] Preserve repeated string qualifiers in order, selected unquoted tokens and known valueless flags; explicit refusal on unrepresentable SBOL export. Interpret CDS codon_start/tables 1 and 11 consistently across explorer, QC and legacy displays, with no computed peptide for unsupported biological instructions.
+- [ ] Diverse real-record/genome dataset, independent scientific review, broader translation tables and complete source/header preservation.
 
 ## 4. Performance
 - [x] Preview annotation coloring capped to visible bases.

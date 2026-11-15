@@ -3,7 +3,8 @@
  * Circular origin-spanning features use start>end as two sequential intervals.
  */
 import {normalizeDNA,gcContent,reverseComplement,translate} from './dna.mjs';
-import {validateFeature,circularFeatureSequence} from './feature-io.mjs';
+import {validateFeature} from './feature-io.mjs';
+import {interpretCDS} from './cds-semantics.mjs';
 const STOPS=new Set(['TAA','TAG','TGA']);
 function warning(code,severity,message,extra={}){
  return {code,severity,message,...extra};
@@ -135,8 +136,19 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
        'Sequence edit affected this annotation; review coordinates.',{featureIndex:index,featureName:f.name}));
    }
    if(cds){
-     const dna=circularFeatureSequence(sequence,f,{circular});
-     if(length%3!==0){
+    try{
+     const coding=interpretCDS(sequence,f,{circular}),dna=coding.dna;
+     if(coding.codonStart!==1){
+       problems.push('CDS_PARTIAL_CODON_START');
+       warnings.push(warning('CDS_PARTIAL_CODON_START','info',
+         'CDS translation skips bases according to /codon_start.',{featureIndex:index,featureName:f.name}));
+     }
+     if(coding.translationMatches===false){
+       problems.push('CDS_TRANSLATION_MISMATCH');
+       warnings.push(warning('CDS_TRANSLATION_MISMATCH','warning',
+         'Computed peptide differs from annotated /translation.',{featureIndex:index,featureName:f.name}));
+     }
+     if(dna.length%3!==0){
        problems.push('CDS_FRAME');
        warnings.push(warning('CDS_FRAME','warning',
          'Annotated CDS length is not divisible by three.',{featureIndex:index,featureName:f.name,length}));
@@ -152,12 +164,17 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
        warnings.push(warning('CDS_STOP','info',
          'Annotated CDS has no terminal standard stop codon.',{featureIndex:index,featureName:f.name}));
      }
-     const protein=translate(dna,{partial:'ignore'});
+     const protein=coding.protein;
      if(protein.slice(0,-1).includes('*')){
        problems.push('CDS_INTERNAL_STOP');
        warnings.push(warning('CDS_INTERNAL_STOP','warning',
          'Annotated CDS contains an in-frame internal stop codon.',{featureIndex:index,featureName:f.name}));
      }
+    }catch(error){
+      problems.push('CDS_UNSUPPORTED_SEMANTICS');
+      warnings.push(warning('CDS_UNSUPPORTED_SEMANTICS','warning',error.message,
+        {featureIndex:index,featureName:f.name}));
+    }
    }
    return {index,name:String(f.name??'unnamed'),type:String(f.type??''),
      start:f.start,end:f.end,strand:f.strand??1,length,valid:true,problems};
@@ -202,7 +219,7 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
    predictedOrfs:orfs.items,orfListTruncated:orfs.truncated,
    methodology:{
      coordinates:'1-based inclusive features; predicted ORFs on linearized strands',
-     CDS:'Standard genetic code and ATG start heuristic; no alternative genetic code validation',
+     CDS:'CDS tables 1 and 11 with codon_start; unsupported biological instructions are reported, not translated. ORF scans use standard code and an ATG heuristic',
      restrictions:'No enzyme or wet-lab validation',
      junctions:'Adjacent annotation boundaries only, no sequence-source verification',
      coverage:'Advisory sequence analysis only; does not establish construct viability'

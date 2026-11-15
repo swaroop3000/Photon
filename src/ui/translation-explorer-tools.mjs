@@ -11,7 +11,7 @@ export function renderTranslationExplorer(){
  panel.style.cssText='border-top:1px solid var(--line);margin-top:18px;padding-top:15px';
  const title=document.createElement('h3');title.textContent='Six-frame translation explorer · Photon 3.3';
  const help=document.createElement('div');help.className='mini';
- help.textContent='Inspect standard-code translations for all six linearized frames, complete ATG-to-stop ORF candidates, and annotated CDS sequences. Original 1-based coordinates shown. Not a biological function prediction.';
+ help.textContent='Inspect standard-code translations for all six linearized frames, complete ATG-to-stop ORF candidates, and annotated CDS sequences (tables 1/11 and codon_start). Original 1-based coordinates shown. Not a biological function prediction.';
  const controls=document.createElement('div');
  controls.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:9px 0';
  const minLabel=document.createElement('label');minLabel.textContent='Minimum ORF length (aa)';
@@ -72,9 +72,9 @@ export function renderTranslationExplorer(){
      cds.textContent='Annotated CDS:\n'+(result.annotatedCDS.length?
        result.annotatedCDS.map(x=>x.name+': '+(x.valid?
        x.start+'..'+x.end+' ('+(x.strand===-1?'-':'+')+
-       ') · '+x.aminoAcidLength+' aa · '+(x.flags.join(', ')||'no heuristic flags')+
+       ') · table '+x.translationTable+' · codon_start '+x.codonStart+' · '+x.aminoAcidLength+' aa · '+(x.flags.join(', ')||'no heuristic flags')+
        '\n  Protein '+x.protein.slice(0,150)+(x.protein.length>150?'…':'')
-       :'invalid coordinates: '+x.error)).join('\n'):
+       :'CDS not analyzed: '+x.error)).join('\n'):
        'None.');
      orfs.textContent='Complete candidate ORFs (first 50):\n'+
        (result.candidates.slice(0,50).map(x=>x.frame+' · '+x.start+'..'+x.end+

@@ -46,4 +46,4 @@ the hosted deployment checklist item.
 
 ## Data safety
 
-Photon stores local repositories in the browser's localStorage. It is not a clinical record system, a remote git service, or a durable backup. Export Photon JSON bundles before clearing site data, switching origins or importing large collections. Keep sensitive/clinical data out of the demo.
+Photon stores active projects and libraries in revisioned IndexedDB, retaining legacy localStorage source bytes during migration (see `STORAGE.md`). It is not a clinical record system, a remote git service, or a durable backup. Export Photon JSON bundles before clearing site data, switching origins or importing large collections. Keep sensitive/clinical data out of the demo.

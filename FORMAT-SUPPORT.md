@@ -10,12 +10,14 @@ Photon's strict GenBank import supports:
 - 1-based, inclusive single-base and continuous interval features.
 - A reverse strand via `complement(...)`.
 - Circular-origin features via exactly two intervals `join(start..length,1..end)` (optionally wrapped in `complement`).
-- Quoted qualifiers such as `gene`, `product`, `note`, `label`, `locus_tag`, and other uniquely named string qualifiers. Wrapped prose joins with spaces; wrapped `translation` values join without whitespace. Literal quotes use INSDC doubled quotes (`""`).
+- Quoted qualifiers such as `gene`, `product`, `note`, `label`, `locus_tag`, and other string qualifiers. Repeated values retain their per-key order as arrays of at least two strings; singleton values remain strings. Duplicate `/label` values are rejected because Photon has one display name. Wrapped prose joins with spaces; wrapped `translation` values join without whitespace. Literal quotes use INSDC doubled quotes (`""`).
+- Selected unquoted forms: `codon_start` (1–3), positive numeric `transl_table`, bracketed numeric `citation`, `rpt_type` (tandem/inverted/flanking/terminal/direct/dispersed/other), and `direction` (left/right/both). Numeric values are stored as strings.
+- Valueless flags: `pseudo`, `partial`, `ribosomal_slippage`, `trans_splicing`, `environmental_sample`, `metagenome_source`, `focus`, `germline`, `rearranged`, `transgenic`, `proviral`, `virion`, stored as `true`. Repeated flags are rejected.
 - The `source` feature is read for source structure and deliberately omitted from the construct annotation list.
 
 Photon rejects ambiguous or unrepresentable cases rather than silently changing meaning:
 - Fuzzy positions (`<`/`>`), remote features, `order(...)`, non-origin `join(...)`, and other compound/multi-exon structures.
-- Repeated or valueless qualifiers; extra complex qualifier syntax and unterminated quoted values.
+- Unknown unquoted forms or valueless flags, duplicate labels/flags, extra complex qualifier syntax and unterminated quoted values. Unsupported SBOL exports explicitly reject arrays/flags instead of stringifying them.
 - Invalid sequence, incorrect declared length, and malformed annotations.
 - The single-record API rejects multiple LOCUS records. The collection API and reviewed browser import support multiple individually supported records (100 records, 1 Mb total, 500 kb per record, 20,000 features in the browser).
 
@@ -30,8 +32,12 @@ not represented in the normalized feature model.
 `python scripts/validate-biopython.py` with Biopython 1.86 independently generates
 and reads synthetic linear/circular records, checking reverse/wrapped locations,
 qualifiers, feature extraction and round trips. Parser warnings fail this check.
-These two records are regression evidence for the supported subset; diverse real
-records, full INSDC support and preservation of all headers remain outstanding.
+These two synthetic records are regression evidence for the supported subset.
+`python scripts/validate-real-genbank.py` adds the pinned public pBR322 J01749.1
+record: 48 non-source annotations, its three CDS peptides and 270 CDS vectors
+cross-checked with Biopython 1.86 (475 assertions). See the fixture manifest for
+provenance. Diverse real genomes, full INSDC support and header/source preservation
+remain outstanding.
 
 ## SBOL / Photon XML
 
@@ -133,7 +139,7 @@ Saved backbones are snapshots: editing the current plasmid does not change a sav
 
 The Builder contains a **Run construct QC** panel that analyzes the current working DNA without changing sequence, annotations, or version-control state. It displays GC fraction and A/C/G/T counts, annotated-feature problems, adjacent annotation-junction context, homopolymer runs, tandem-repeat candidates, and complete putative ATG-to-stop ORFs on the six linear reading frames. It supports a **Download QC JSON** action using the versioned `photon/construct-qc/1` schema.
 
-Feature checks validate 1-based inclusive positions and the circular-origin `start>end` model. Annotated `CDS` regions are inspected using the standard genetic code for length divisible by three, ATG start heuristic, terminal stop codon, and in-frame internal stops. Reverse-strand and annotated origin-spanning CDS regions are read in their biological orientation. Alternative genetic codes, alternative translation starts, splice models, frameshifts, and gene function are not inferred.
+Feature checks validate 1-based inclusive positions and the circular-origin `start>end` model. Annotated `CDS` regions use the declared `codon_start` and supported translation table (1 or 11) for frame, terminal stop, internal stop and supplied-peptide comparisons; non-ATG starts retain an advisory heuristic flag. Valid complete initiation codons are translated as methionine, using the declared table; a non-default codon_start is reported as partial and does not recode initiation. Reverse-strand and annotated origin-spanning CDS regions are read in their biological orientation. Other genetic codes, splice models, biological exceptions and gene function are not inferred. `/transl_except`, `/exception`, `/ribosomal_slippage`, `/trans_splicing`, `/pseudo`, `/pseudogene` and `/partial` explicitly suppress annotated-peptide inference and add an unsupported-semantics diagnostic.
 
 Adjacent feature junctions are listed with local sequence context when contiguous annotated features touch; there is **no reference design or sequencing trace** with which to verify the actual junction. Repeats and ORFs are threshold-based candidates, not functional annotations. The six-frame ORF scan operates on the displayed linearized orientation; novel unannotated origin-crossing circular ORFs are not inferred. The report is bounded to 1,000,000 bases and 2,000 annotations, with caps on repeat and ORF findings.
 
@@ -144,9 +150,9 @@ Adjacent feature junctions are listed with local sequence context when contiguou
 
 The Builder includes a **Six-frame translation explorer** with an adjustable minimum complete-ORF length. It calculates amino-acid translations for forward `+1/+2/+3` and reverse-complement `-1/-2/-3` frames, maps each displayed codon back to **1-based inclusive coordinates on the original reference sequence**, and identifies candidate ORFs from **ATG** through the first in-frame **TAA/TAG/TGA** stop codon. Frame protein previews and codon lists are bounded to 500 translated codons; the UI lists the first 100 codons per frame. Candidate ORF reporting is capped at 250 entries, with a truncation indicator. The six-frame preview uses the **standard genetic code**, and candidate ORF discovery uses a linearized sequence even for circular constructs (it does *not* discover new unannotated ORFs crossing the origin).
 
-Annotated **CDS** features are analyzed separately in their declared strand orientation, including circular-origin annotations when supported by Photon's coordinate model. The report records translated protein, feature coordinates, start codon, peptide length, terminal stop, internal stop count, and heuristic flags for non-ATG starts, missing terminal stops, internal stops, or length not divisible by three. Invalid CDS coordinates are reported explicitly instead of being silently interpreted as valid.
+Annotated **CDS** features are analyzed separately in their declared strand orientation, including circular-origin annotations when supported by Photon's coordinate model. The report records translated protein, feature coordinates, start codon, peptide length, terminal stop, internal stop count, and heuristic flags for non-ATG starts, missing terminal stops, internal stops, or length not divisible by three. Invalid CDS coordinates and unsupported biological instructions are reported explicitly without a computed peptide. Reports include table, codon_start, annotated/coding lengths, supplied-peptide match and partial/mismatch flags. Legacy inspector, Analyze peptide/protein stats and codon optimization use the same checks; optimization is available only for forward, non-wrapped, complete-frame ATG CDS without a supplied-peptide mismatch, and uses full-construct undo/save acknowledgement.
 
-**Report and safety:** The versioned **`photon/translation/1`** JSON report can be downloaded after analysis, but export is refused when the working construct or repository/branch has changed. Results do not mutate DNA, annotations, or version history. The analysis does not establish real transcription, translational efficiency, splicing, alternative genetic code, alternative start codons, regulatory activity, or protein function. An absence of heuristic flags does not establish a functional gene product.
+**Report and safety:** The versioned **`photon/translation/1`** JSON report can be downloaded after analysis, but export is refused when the working construct or repository/branch has changed. Results do not mutate DNA, annotations, or version history. The analysis does not establish real transcription, translational efficiency, splicing, unsupported genetic codes, actual translation initiation, regulatory activity, or protein function. An absence of heuristic flags does not establish a functional gene product.
 
 
 ## Photon 3.4 — Real Primer3 engine (local workflow)

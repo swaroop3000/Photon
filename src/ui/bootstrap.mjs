@@ -1,6 +1,8 @@
 /** Validate/open projects before the existing UI modules inspect the working construct. */
 import {createIndexedProjectStorage} from '../core/indexed-project-storage.mjs';
 import {createProjectCommands} from '../core/project-commands.mjs';
+import {interpretCDS} from '../core/cds-semantics.mjs';
+globalThis.PhotonCDS={interpret:interpretCDS};
 const legacyStorage={get length(){return localStorage.length;},key:i=>localStorage.key(i),getItem:key=>localStorage.getItem(key)};
 const fenceStorage={getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)};
 await globalThis.PhotonInitializeStorage(createIndexedProjectStorage({legacyStorage,fenceStorage}),createProjectCommands);

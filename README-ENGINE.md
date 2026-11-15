@@ -35,7 +35,7 @@ cross-checked with pinned Biopython in `scripts/validate-biopython.py`.
 
 ## Scope limits
 
-This is a scientific *foundation*, not a certified clinical engine. The motif finder does not model cut offsets, methylation, star activity, or ambiguous-site probabilities. Translation uses the standard nuclear genetic code, not mitochondrial or organism-specific codes.
+This is a scientific *foundation*, not a certified clinical engine. The motif finder does not model cut offsets, methylation, star activity, or ambiguous-site probabilities. Core translation and six-frame scans use the standard genetic code. Annotated CDS interpretation additionally supports tables 1 and 11 with explicit codon_start and initiation rules; unsupported biological instructions receive a diagnostic without a peptide. See FORMAT-SUPPORT.md for exact limits.
 
 Separate modules implement restriction cuts, supported GenBank/SBOL subsets and
 conservative circular-gap edits; their contracts appear in `FORMAT-SUPPORT.md`.

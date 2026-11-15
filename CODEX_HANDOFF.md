@@ -1,5 +1,23 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: GenBank qualifier and CDS semantics milestone — November 15, 2026
+
+- Continues `782bfd4`. GenBank retains ordered repeated strings, known valueless
+  flags and selected unquoted tokens. Duplicate labels/flags, unknown tokens and
+  unsupported locations still fail closed. SBOL paths refuse new unrepresentable
+  qualifier forms explicitly.
+- Shared `cds-semantics.mjs` handles tables 1/11, codon_start, initiation and
+  supplied-translation comparison. Biological exceptions/pseudogenes/unsupported
+  codes suppress peptide inference in explorer, QC and legacy displays.
+  Legacy selected-CDS codon optimization now uses committed full-construct undo.
+- First pinned public accession fixture: pBR322 J01749.1 (48 non-source features,
+  three CDS). Biopython 1.86 checks it and 270 independent CDS vectors offline:
+  475 assertions. Original header/source preservation remains outside the subset.
+- Validation: 255 Node tests, 70 Chromium tests, build, existing 3,669 synthetic
+  Biopython assertions and the new 475 checks pass. See `reports/2026-11-15/GENBANK-CDS-VALIDATION.md`.
+- Broader compound/fuzzy/remote locations, diverse genomes, biological exceptions,
+  full scientific review and the remaining release gates stay open. Draft only.
+
 ## Latest: active IndexedDB cutover — November 15, 2026
 
 - Continued from `1d42019`. `src/core/indexed-project-storage.mjs` is now the active

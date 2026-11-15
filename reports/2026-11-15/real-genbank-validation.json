@@ -1,0 +1,12 @@
+{
+  "schema": "photon-real-genbank-validation/1",
+  "biopython": "1.86",
+  "accession": "J01749.1",
+  "sha256": "7660b0fe95a91d492b102192dc72924508a69fda762988aa0923b3d5cc2073f6",
+  "length": 4361,
+  "non_source_features": 48,
+  "annotated_cds": 3,
+  "cds_vectors": 270,
+  "assertions": 475,
+  "scope": "One public plasmid record; exact supported locations, qualifiers, extraction and tables 1/11. No header/source preservation, broad INSDC, expression or laboratory validation."
+}

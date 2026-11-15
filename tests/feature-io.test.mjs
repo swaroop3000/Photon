@@ -107,9 +107,9 @@ test('external GenBank multiline qualifiers preserve text and escaped quotes',()
    '/translation="MA\n                     KL"');
  assert.equal(parseGenbank(translated).features[0].qualifiers.translation,'MAKL');
 });
-test('malformed or repeated qualifiers remain fail-closed',()=>{
+test('malformed qualifiers remain fail-closed',()=>{
  for(const bad of ['/note="unterminated','/note="bad" trailing','/note=unquoted',
-   '/note="first"\n                     /note="second"']){
+   '/pseudo\n                     /pseudo']){
    assert.throws(()=>parseGenbank(externalGenbank.replace('/note="simple annotation"',bad)),
      /qualifier|Unterminated/);
  }

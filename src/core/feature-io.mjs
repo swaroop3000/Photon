@@ -35,6 +35,23 @@ export function parseGenbankFeatureLocation(value,length,{circular=false}={}){
  }else throw new RangeError('Unsupported GenBank feature location: '+value);
  return validateFeature({start,end,strand:reverse?-1:1},length,{circular});
 }
+// Unquoted INSDC forms whose lexical syntax is retained without guessing.
+const unquotedQualifiers={
+ codon_start:/^[123]$/,transl_table:/^[1-9]\d*$/,citation:/^\[[1-9]\d*\]$/,
+ rpt_type:/^(tandem|inverted|flanking|terminal|direct|dispersed|other)$/,
+ direction:/^(left|right|both)$/
+};
+const flagQualifiers=new Set(['pseudo','partial','ribosomal_slippage','trans_splicing',
+ 'environmental_sample','metagenome_source','focus','germline','rearranged','transgenic','proviral','virion']);
+function qualifierText(key,value){
+ if(value===true&&flagQualifiers.has(key))return '/'+key;
+ if(typeof value!=='string')throw new RangeError('Unsupported GenBank qualifier value: '+key);
+ if(Object.hasOwn(unquotedQualifiers,key)){
+   if(!unquotedQualifiers[key].test(value))throw new RangeError('Invalid GenBank qualifier value: '+key);
+   return '/'+key+'='+value;
+ }
+ return '/'+key+'='+quoteQualifier(value);
+}
 function quoteQualifier(value){
  if(typeof value!=='string'||/[\r\n]/.test(value))
    throw new RangeError('Unsupported newline or non-string in GenBank qualifier');
@@ -56,9 +73,12 @@ export function serializeGenbank(working){
    if(!qualifiers||typeof qualifiers!=='object'||Array.isArray(qualifiers))
      throw new RangeError('Invalid feature qualifiers');
    for(const [key,value] of Object.entries(qualifiers).sort(([a],[b])=>a.localeCompare(b))){
-     if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)||typeof value!=='string'||key==='label')
+     if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)||key==='label')
        throw new RangeError('Unsupported GenBank qualifier: '+key);
-     lines.push('                     /'+key+'='+quoteQualifier(value));
+     const values=Array.isArray(value)?value:[value];
+     if(Array.isArray(value)&&(value.length<2||value.some(item=>typeof item!=='string')))
+       throw new RangeError('Repeated GenBank qualifiers require at least two strings: '+key);
+     for(const item of values)lines.push('                     '+qualifierText(key,item));
    }
  }
  lines.push('ORIGIN');
@@ -71,9 +91,9 @@ export function serializeGenbank(working){
  */
 /** Photon 2.4: conservative external GenBank flat-file parser.
  * Supported: one LOCUS/ORIGIN record, single positions, simple ranges,
- * origin-spanning two-part joins, complement, and single-line quoted qualifiers.
- * Remote, fuzzy, order, multi-exon joins, valueless/repeated
- * qualifiers are rejected because the current feature model cannot retain them.
+ * origin-spanning two-part joins, complement, quoted/repeated qualifiers, known
+ * valueless flags and selected unquoted tokens. Remote, fuzzy, order and
+ * multi-exon joins are rejected because the current feature model cannot retain them.
  */
 export function parseGenbank(text){
  if(typeof text!=='string')throw new TypeError('GenBank must be text');
@@ -103,7 +123,29 @@ export function parseGenbank(text){
  const features=[];
  const section=text.slice(0,origin).match(/^FEATURES[^\r\n]*\r?\n([\s\S]*)$/mi)?.[1]??'';
  let pending=null;
+ function storeQualifier(key,value){
+   if(key==='label'){
+     if(pending.label!==null)throw new RangeError('Duplicate label qualifier');
+     pending.label=value;
+   }else if(Object.hasOwn(pending.qualifiers,key)){
+     const old=pending.qualifiers[key];
+     if((typeof old!=='string'&&!Array.isArray(old))||typeof value!=='string')throw new RangeError('Repeated GenBank flag qualifier: '+key);
+     pending.qualifiers[key]=[...(Array.isArray(old)?old:[old]),value];
+   }else{
+     Object.defineProperty(pending.qualifiers,key,{value,enumerable:true,writable:true,configurable:true});
+   }
+   pending.openQualifier=null;
+ }
  function qualifier(key,raw){
+   if(raw===undefined){
+     if(!flagQualifiers.has(key))throw new RangeError('Unsupported GenBank flag qualifier: '+key);
+     storeQualifier(key,true);return;
+   }
+   if(!raw.startsWith('"')){
+     if(!Object.hasOwn(unquotedQualifiers,key)||!unquotedQualifiers[key].test(raw))
+       throw new RangeError('Unsupported GenBank unquoted qualifier: '+key);
+     storeQualifier(key,raw);return;
+   }
    // INSDC quoted values escape literal quotes by doubling them. Wrapped prose
    // joins with spaces; translation is the whitespace-free amino acid string.
    const match=raw.match(/^"((?:[^"]|"")*)"$/);
@@ -114,15 +156,7 @@ export function parseGenbank(text){
    }
    let value=match[1].replace(/""/g,'"');
    if(key==='translation')value=value.replace(/\s/g,'');
-   if(key==='label'){
-     if(pending.label!==null)throw new RangeError('Duplicate label qualifier');
-     pending.label=value;
-   }else{
-     if(Object.hasOwn(pending.qualifiers,key))throw new RangeError('Repeated GenBank qualifier not representable: '+key);
-     // Define as own data property, including unusual keys such as __proto__.
-     Object.defineProperty(pending.qualifiers,key,{value,enumerable:true,writable:true,configurable:true});
-   }
-   pending.openQualifier=null;
+   storeQualifier(key,value);
  }
  function finalize(){
    if(!pending)return;
@@ -130,7 +164,8 @@ export function parseGenbank(text){
    const coords=parseGenbankFeatureLocation(pending.location,seq.length,{circular:topology==='circular'});
    if(pending.key!=='source'){
      const qualifiers=pending.qualifiers;
-     const label=pending.label??qualifiers.gene??qualifiers.product??pending.key;
+     const first=value=>Array.isArray(value)?value[0]:value;
+     const label=pending.label??first(qualifiers.gene)??first(qualifiers.product)??pending.key;
      const feature={name:label,type:pending.key,...coords};
      if(Object.keys(qualifiers).length)feature.qualifiers=qualifiers;
      features.push(feature);
@@ -156,7 +191,7 @@ export function parseGenbank(text){
    }
    if(tail.startsWith('/')){
      pending.qualifierMode=true;
-     const m=tail.match(/^\/([A-Za-z][A-Za-z0-9_]*)=(".*)$/);
+     const m=tail.match(/^\/([A-Za-z][A-Za-z0-9_]*)(?:=(.*))?$/);
      if(!m)throw new RangeError('Unsupported GenBank qualifier syntax: '+tail.slice(0,50));
      qualifier(m[1],m[2]);
    }else if(!pending.qualifierMode){

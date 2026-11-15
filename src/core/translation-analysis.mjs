@@ -4,7 +4,8 @@
  * Linearized reference only; novel origin-spanning ORFs are not inferred.
  */
 import {normalizeDNA,reverseComplement,translate} from './dna.mjs';
-import {validateFeature,circularFeatureSequence} from './feature-io.mjs';
+import {validateFeature} from './feature-io.mjs';
+import {interpretCDS} from './cds-semantics.mjs';
 const STOP=new Set(['TAA','TAG','TGA']);
 const DISPLAY_LIMIT=500;
 const ORF_LIMIT=250;
@@ -70,20 +71,24 @@ export function analyzeAnnotatedCDS(working){
    if(String(feature?.type??'').toLowerCase()!=='cds')return null;
    try{
      validateFeature(feature,seq.length,{circular});
-     const nucleotides=circularFeatureSequence(seq,feature,{circular});
-     const aa=translate(nucleotides,{partial:'ignore'});
+     const coding=interpretCDS(seq,feature,{circular});
+     const nucleotides=coding.dna,aa=coding.protein;
      const divisible=nucleotides.length%3===0;
      const terminalStop=aa.endsWith('*');
      const stopCount=[...aa.slice(0,-1)].filter(c=>c==='*').length;
      return {index,name:String(feature.name??'CDS '+(index+1)),valid:true,
        start:feature.start,end:feature.end,strand:feature.strand??1,
-       nucleotideLength:nucleotides.length,
+       nucleotideLength:nucleotides.length,annotatedLength:coding.annotatedLength,
+       translationTable:coding.translationTable,codonStart:coding.codonStart,
+       translationMatches:coding.translationMatches,
        aminoAcidLength:aa.replace(/\*$/,'').length,
        startCodon:nucleotides.slice(0,3),
        terminalStop,internalStops:stopCount,
        protein:aa,
        flags:[
          ...(!divisible?['LENGTH_NOT_DIVISIBLE_BY_3']:[]),
+         ...(coding.codonStart!==1?['PARTIAL_CODON_START']:[]),
+         ...(coding.translationMatches===false?['ANNOTATED_TRANSLATION_MISMATCH']:[]),
          ...(nucleotides.slice(0,3)!=='ATG'?['NON_ATG_START']:[]),
          ...(!terminalStop?['NO_TERMINAL_STOP']:[]),
          ...(stopCount?['INTERNAL_STOP']:[])

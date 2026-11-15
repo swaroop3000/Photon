@@ -1,0 +1,8 @@
+{
+  "accession": "J01749.1",
+  "retrieved_utc": "2026-11-15",
+  "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=J01749.1&rettype=gbwithparts&retmode=text",
+  "sha256": "7660b0fe95a91d492b102192dc72924508a69fda762988aa0923b3d5cc2073f6",
+  "bytes": 24806,
+  "modified": false
+}
