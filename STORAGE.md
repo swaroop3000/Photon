@@ -97,9 +97,26 @@ preserving their intended bytes; do not treat them as ordinary project backups.
 **Create local archive** copies a consistent active project/library snapshot into
 the recovery vault and verifies its checksum by reading it back. It exports
 `photon/browser-storage-archive/1`, including known library keys. That format is
-not yet accepted by the project-only Restore backup control; general multi-key
-archive-file restore remains separate work. Use the existing individual library
-export/import controls alongside project backups when moving data today.
+accepted separately through **Recovery → Review archive file** (64 MB maximum),
+not through the project-only Restore backup control. The review verifies archive
+checksums, projects/history and both library grammars before offering replacement.
+It lists incoming projects/libraries and current library keys absent from the
+archive. Those absent keys are removed so restored namespaces match the archive.
+Exact accepted library strings, including comments/spacing, are retained.
+
+The user must check the acknowledgement and select **Restore reviewed archive**.
+Before writing, Photon saves and reads back a prior-state recovery archive. A full
+or unavailable vault prevents replacement; no copies are deleted automatically.
+The final transaction checks the reviewed active revision and retained-source hash,
+then replaces projects and applies all library writes/removals atomically. A stale
+review, denied write or transaction failure leaves active projects/libraries as
+before. Reviewed normal restores preserve original legacy source bytes.
+
+Archive restore currently requires a semantically valid active snapshot for the
+pre-replacement recovery copy. Corrupt/unknown active schemas still need their
+separate guarded recovery path. Invalid/future library formats are preserved in
+exportable recovery archives but cannot be applied by this validated restore.
+No reconciliation or conflict merging is inferred.
 
 The vault keeps at most five distinct archives and twenty recovery copies. It
 refuses new copies at capacity without deleting old ones. Download and explicitly
@@ -117,8 +134,10 @@ quota exhaustion is simulated through transaction faults; the tests separately
 fill real localStorage and verify active IndexedDB editing continues.
 
 Existing project-backup import limits remain 20 MB / 500 projects. Live storage
-can exceed those import limits; larger recovery/export workflows need further
-engineering. Archive read limits and browser/device budgets also remain bounded.
+can exceed those project-only import limits. The separate browser archive path
+accepts at most 64 MB with up to 10,000 entries and validates all projects/libraries.
+This is a bounded alternative, not streaming import or unbounded genome support.
+Whole-construct memory use and broader browser/device budgets remain open.
 
 Failure rollback and migration source retention are tested. **Automatic reverse
 migration to an older software version is not implemented.** Do not switch to an

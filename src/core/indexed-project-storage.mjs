@@ -96,10 +96,11 @@ export function createIndexedProjectStorage({indexedDB=globalThis.indexedDB,lega
   if(typeof raw==='string'){recoveryRaw=raw;recoveryKind=original?'original':'unsaved';}
   issue=new ProjectStorageError('Project was not saved: '+error.message,error);throw issue;
  }
- async function write(data,{restore=false,libraries:changes=[],reviewedLegacyHash}={}){
+ async function write(data,{restore=false,libraries:changes=[],reviewedLegacyHash,reviewedRevision}={}){
   let raw;const expectedRevision=revision,expectedSourceHash=sourceHash;
   try{
    raw=JSON.stringify(data);validate(data);
+   if(reviewedRevision!==undefined&&reviewedRevision!==expectedRevision)throw new Error('Projects changed after archive review; review again before restoring');
    if(expectedRevision===undefined)throw new Error('Active storage was not verified; restore access and reload before writing');
    if(blocked&&!restore)throw new Error('Saving is blocked until a validated backup is restored');
    for(const change of changes){libraryKey(change.key);if(change.raw!==null&&typeof change.raw!=='string')throw new Error('Invalid library value');}

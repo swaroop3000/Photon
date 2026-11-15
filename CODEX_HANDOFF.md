@@ -1,5 +1,29 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: reviewed archive restore and final session verification — November 15, 2026
+
+- Continues `1666c41`. Recovery accepts bounded browser archive files through a
+  separate review/acknowledgement. It validates projects and both library grammars,
+  preserves exact accepted library bytes and enumerates absent-key removals.
+- Before replacement, a prior-state recovery archive commits and passes read-back.
+  A full/unavailable vault prevents restore without deleting copies. Final writes
+  use one project/library transaction and check reviewed revision + source hash.
+  Same-client writes after review, source drift and transaction failures reject.
+- `part-library-text.mjs` shares the existing Builder grammar with archive review.
+  Project-only backup format/limits and preserved legacy source bytes stay unchanged.
+- Combined verification: **265 Node tests, 80 Chromium cases**, zero failures/skips;
+  build, 67-asset Wrangler dry run, actual Primer3 (five pairs), three independent
+  pySBOL3 graph validations (zero errors/warnings), existing 3,669 synthetic
+  Biopython checks plus 475 real-record/CDS and 12,358 curated-enzyme assertions.
+  Built distribution imported pBR322, displayed its three table-11 CDS peptides,
+  and restored an archive without page errors. See `reports/2026-11-15/ROADMAP-SESSION.md`.
+- Still open: compound/fuzzy/remote INSDC locations and source/header preservation;
+  full editor virtualization/streaming and broader browser/device budgets; Gateway
+  and chemistry/dataset acceptance; automatic reverse migration and independent
+  code/scientific/cutover/release review; authenticated successful Cloudflare-log
+  and branch-setting review. PR #1 stays draft, main protected, no production
+  promotion. No full Genome Compiler, laboratory or clinical parity claim.
+
 ## Latest: complete UI enzyme cut audit — November 15, 2026
 
 - Continues `107b200`. `curated-digest.mjs` models all 28 UI enzymes with explicit

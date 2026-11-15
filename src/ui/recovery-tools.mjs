@@ -1,7 +1,8 @@
-/** Local archive and persistent failed-attempt recovery; no active backend switch. */
+/** Local archives, reviewed atomic archive restore and persistent failed attempts. */
 import {createRecoveryVault} from '../core/recovery-vault.mjs';
 import {PRIMARY_PROJECT_KEY,createBrowserArchive,parseBrowserArchive,sha256} from '../core/project-archive.mjs';
 import {validateProjectDatabase} from '../core/project-backup.mjs';
+import {reviewArchiveRestore} from '../core/archive-restore.mjs';
 const host=globalThis.PhotonRecoveryHost;
 const vault=createRecoveryVault();
 const sessionId=globalThis.crypto?.randomUUID?.()??Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
@@ -55,7 +56,7 @@ globalThis.PhotonRecovery={
 };
 function action(label,handler){const node=document.createElement('button');node.className='btn sm';node.textContent=label;node.onclick=handler;return node;}
 button.onclick=async()=>{
- globalThis.modal('<h2 class="ph">Local recovery</h2><div class="sub">Saved copies remain on this browser and device. Export a file for a separate backup. Creating an archive leaves your current projects unchanged.</div><button class="btn sm" id="photonCreateArchive">Create local archive</button><button class="btn sm" id="photonMigrationSource">Download original migration source</button><button class="btn sm" id="photonRetainedSource">Download retained legacy copy</button><button class="btn sm" id="photonReviewRetainedSource">Review retained source for restore</button><div id="photonVaultStatus" role="status" class="mini" style="margin:10px 0"></div><div id="photonVaultList"></div><button class="btn" onclick="closeModal()">Close</button>');
+ globalThis.modal('<h2 class="ph">Local recovery</h2><div class="sub">Saved copies remain on this browser and device. Export a file for a separate backup. Creating an archive leaves your current projects unchanged.</div><button class="btn sm" id="photonCreateArchive">Create local archive</button><button class="btn sm" id="photonMigrationSource">Download original migration source</button><button class="btn sm" id="photonRetainedSource">Download retained legacy copy</button><button class="btn sm" id="photonReviewRetainedSource">Review retained source for restore</button><label class="btn sm">Review archive file<input type="file" id="photonArchiveFile" accept=".json,application/json" style="display:block;max-width:240px"></label><div id="photonArchiveReview"></div><div id="photonVaultStatus" role="status" class="mini" style="margin:10px 0"></div><div id="photonVaultList"></div><button class="btn" onclick="closeModal()">Close</button>');
  const status=document.getElementById('photonVaultStatus'),list=document.getElementById('photonVaultList');
  const archiveButton=document.getElementById('photonCreateArchive');
  document.getElementById('photonMigrationSource').onclick=async()=>{try{host.download('photon-migration-source.json',JSON.stringify(await host.migrationSource(),null,2));}catch(error){status.textContent='Source export rejected: '+error.message;}};
@@ -72,6 +73,39 @@ button.onclick=async()=>{
   }catch(error){status.textContent='Source restore rejected: '+error.message;}
  };
 
+ const archiveFile=document.getElementById('photonArchiveFile'),reviewArea=document.getElementById('photonArchiveReview');
+ let reviewGeneration=0;
+ archiveFile.onchange=async()=>{
+  const generation=++reviewGeneration;reviewArea.replaceChildren();
+  try{
+   const file=archiveFile.files[0];if(!file)return;
+   if(file.size>64_000_000)throw new Error('Archive exceeds the 64 MB read limit');
+   const text=await file.text(),current=await host.readSnapshot(),source=host.retainedLegacySource();
+   const plan=await reviewArchiveRestore(text,current,source.entries);
+   if(generation!==reviewGeneration)return;
+   const description=document.createElement('p');description.textContent='Replace all active projects with '+plan.projectCount+' archived project(s), restore '+plan.libraryCount+' library entries, and remove '+plan.removedLibraryCount+' current library entries absent from the archive. Legacy source bytes stay unchanged. A local recovery archive is required before replacement.';
+   const label=document.createElement('label'),ack=document.createElement('input');ack.type='checkbox';ack.id='photonArchiveAcknowledge';label.append(ack,document.createTextNode(' I reviewed the replacement and exported any backups I need.'));
+   const apply=action('Restore reviewed archive',async()=>{
+    apply.disabled=true;archiveFile.disabled=true;ack.disabled=true;
+    try{
+     const now=await host.readSnapshot();
+     if(now.revision!==plan.reviewedRevision)throw new Error('Projects or libraries changed after review; review the archive again');
+     const entries=[{key:PRIMARY_PROJECT_KEY,raw:JSON.stringify(now.data)},...now.libraries];
+     const recovery=await createBrowserArchive(entries);
+     const copy=await vault.put('archive',recovery,{label:'Before archive restore'});
+     const verified=await parseBrowserArchive(JSON.stringify(await vault.read(copy.id)));
+     if(verified.sha256!==recovery.sha256)throw new Error('Prior-state recovery read-back mismatch');
+     // The write checks both the reviewed active revision and retained source hash.
+     await host.restoreData(plan.data,plan.libraries,plan.reviewedLegacyHash,plan.reviewedRevision);
+     reviewArea.replaceChildren();status.textContent='Browser archive restored atomically. The prior state is saved as a local recovery archive.';
+     await populate();
+    }catch(error){status.textContent='Archive restore rejected: '+error.message;}
+    finally{archiveFile.disabled=false;ack.disabled=false;}
+   });
+   apply.id='photonRestoreArchive';apply.disabled=true;ack.onchange=()=>{apply.disabled=!ack.checked;};
+   reviewArea.append(description,label,apply);status.textContent='Archive validated. Review replacement before restoring.';
+  }catch(error){if(generation===reviewGeneration)status.textContent='Archive review rejected: '+error.message;}
+ };
  async function populate(){
   const records=await vault.list();list.replaceChildren();
   for(const entry of records){

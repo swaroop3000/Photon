@@ -719,11 +719,12 @@ window.PhotonInitializeStorage=async(store,makeCommands)=>{
  window.PhotonProjects={whenIdle:()=>projectCommands.whenIdle(),readSnapshot:()=>store.readSnapshot(),snapshotEntries:()=>store.snapshotEntries(),get status(){return {...store.status,busy:projectCommands.busy};}};
  window.PhotonLibraryStorage={getItem:key=>store.getLibrary(key),setItem:(key,raw)=>projectCommands.saveLibrary(key,raw)};
  window.PhotonRecoveryHost.snapshotEntries=()=>store.snapshotEntries();
+ window.PhotonRecoveryHost.readSnapshot=()=>store.readSnapshot();
  window.PhotonRecoveryHost.migrationSource=()=>store.migrationSource();
  window.PhotonRecoveryHost.retainedLegacySource=()=>store.retainedLegacySource();
- window.PhotonRecoveryHost.restoreData=async(data,libraries,reviewedLegacyHash)=>{
+ window.PhotonRecoveryHost.restoreData=async(data,libraries,reviewedLegacyHash,reviewedRevision)=>{
   if(projectCommands.busy)throw new Error('Another action is saving; retry after it finishes');
-  await projectCommands.save(data,{restore:true,libraries,reviewedLegacyHash});DB=data;U.sel=-1;showStorageStatus();render();flash('Restored retained source after review.');
+  await projectCommands.save(data,{restore:true,libraries,reviewedLegacyHash,reviewedRevision});DB=data;U.sel=-1;showStorageStatus();render();flash('Restored projects and reviewed library entries.');
  };
  window.PhotonRecoveryHost.migrateDefaults=data=>{Object.values(data.repos).forEach(migrate);return data;};
  document.body.inert=false;

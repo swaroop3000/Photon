@@ -23,8 +23,8 @@ separate user approval. A successful build is not merge or publication approval.
       backend with coordinated project/library migration, shared revision CAS,
       failure rollback, source retention and missing-active-data protection tests.
 - [ ] Independently review the cutover, command lifecycle and release rollback
-      procedure. Automatic reverse migration and general archive-file restore
-      remain open; retained legacy data must not be assumed current.
+      procedure, including the newly implemented reviewed atomic archive restore.
+      Automatic reverse migration remains open; retained legacy data must not be assumed current.
 - [ ] Review the accumulated PR code, especially legacy merge/rebase/stash,
       annotation integrity, import/bundle trust boundaries and all HTML/SVG sinks.
       The scoped security assessment is not independent full-review signoff.

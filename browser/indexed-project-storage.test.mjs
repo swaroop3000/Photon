@@ -114,3 +114,17 @@ test('unknown future project schemas fail closed without resetting their data',a
   assert.deepEqual(result.after.data,result.before.data);assert.equal(result.after.revision,result.before.revision);
  }finally{await browser.close();}
 });
+test('same-client writes after archive review invalidate the reviewed revision before replacement',async()=>{
+ const browser=await chromium.launch();try{
+  const page=await browser.newPage();await setup(page);
+  const result=await page.evaluate(async()=>{
+   const driver=makeStore('reviewed-revision'),opened=await openStore(driver),reviewed=await driver.readSnapshot();
+   await driver.saveLibrary('photon.parts.2.7:later','part later ACGT');
+   const before=await driver.readSnapshot();let message;
+   try{await driver.save(opened.data,{restore:true,reviewedRevision:reviewed.revision,libraries:[{key:'photon.parts.2.7:later',raw:null}]});}
+   catch(error){message=error.message;}
+   const after=await driver.readSnapshot();driver.close();return{message,before,after};
+  });
+  assert.match(result.message,/changed after archive review/);assert.deepEqual(result.after,result.before);
+ }finally{await browser.close();}
+});
