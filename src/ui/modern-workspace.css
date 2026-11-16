@@ -170,3 +170,100 @@ body.photon-modern{font-size:13px;letter-spacing:-.012em}
 .help-article{padding:12px 0;border-bottom:1px solid var(--line)}.help-article h3{margin:0 0 6px}.help-article p{color:var(--muted);font-size:13px;line-height:1.65}
 .dashboard-heading,.mvp-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.dashboard-heading{justify-content:space-between}.project-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;margin-top:18px}.project-card{display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--panel);color:var(--ink);cursor:pointer}.project-card:hover{border-color:var(--accent)}.project-card svg{width:80px;flex:none}.project-card>span{min-width:0}.project-card b{overflow-wrap:anywhere}.project-card .mini{display:block;margin-top:5px}.draft-notice{padding:10px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:10px}.named-versions{padding:16px;border:1px solid var(--line);border-radius:10px;margin:0 0 22px}.named-versions input{max-width:300px}.named-versions .pill{display:inline-block;margin:4px}#photonToolHelp{margin:10px 14px 0;align-self:flex-start}#photonDropHint{position:fixed;inset:20px;z-index:120;background:var(--panel);color:var(--aink);border:3px dashed var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:20px;padding:25px;text-align:center}#photonDropHint[hidden]{display:none}
 #photonDraftFailure{position:fixed;top:calc(var(--photon-toolbar-height,110px) + 8px);left:220px;right:20px;z-index:90;background:var(--panel);box-shadow:var(--shadow);border-color:var(--partial)}@media(max-width:760px){#photonDraftFailure{left:12px;right:12px}}
+
+/* Refreshed product shell. Applied from the initial HTML, before storage opens. */
+:root,html[data-theme="light"]{
+ --bg:#f4f5fa;--panel:#ffffff;--ink:#20233d;--muted:#68708a;--line:#e7e8f1;--line2:#d9dce9;
+ --accent:#5945d6;--aink:#5140bd;--aw:#eeebff;--bd:#f0f1f7;--sidebar:#16172c;--sidebar-ink:#eeedff;--sidebar-muted:#9b9bb8;
+ --shadow:0 2px 3px #29254403,0 8px 30px #29254404;--primary-ink:#ffffff;
+}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]){
+ --bg:#11121e;--panel:#1b1d2e;--ink:#eeeefa;--muted:#a9adc7;--line:#30334a;--line2:#444860;
+ --accent:#b9afff;--aink:#c5bcff;--aw:#302b50;--bd:#161825;--primary-ink:#21193e;
+}}
+html[data-theme="dark"]{
+ --bg:#11121e;--panel:#1b1d2e;--ink:#eeeefa;--muted:#a9adc7;--line:#30334a;--line2:#444860;
+ --accent:#b9afff;--aink:#c5bcff;--aw:#302b50;--bd:#161825;--primary-ink:#21193e;
+}
+.photon-modern .app{grid-template-columns:224px minmax(0,1fr)}
+.photon-modern .nav{padding:0 15px 20px;background:linear-gradient(180deg,#1b1c34,#131426)}
+.photon-workspace-brand{height:96px;font-size:26px;font-weight:700;gap:9px;letter-spacing:-1px;color:#f5f3ff}
+.photon-workspace-brand svg{width:30px;height:32px;color:#b4a4ff;stroke-width:1.8}
+.photon-workspace-brand small{color:#bdb4e6;border-color:#57506f;font-size:8px;padding:3px 5px;margin-left:auto}
+.photon-nav-heading{padding:26px 12px 10px;color:#999ab6;letter-spacing:.16em}
+.photon-modern .navt{min-height:43px;margin-bottom:2px;font-size:12px;color:#b9bbd1;border-radius:10px;padding:11px 12px}
+.photon-modern .navt:hover{background:#ffffff09;color:#fff}
+.photon-modern .navt.active{background:#8070da30;color:#f0ecff;box-shadow:inset 3px 0 #a695ff}
+.photon-modern .navt .cnt{color:#cec8e8;background:#a695ff15}
+.photon-workspace-footer{color:#d2d0e8;border-top:1px solid #ffffff0b;padding:19px 12px 0}
+.photon-workspace-footer span{color:#9395b1}
+.photon-projects-link{display:flex;align-items:center;gap:10px;border:1px solid #ffffff14;background:#ffffff05;color:#d8d6ef;border-radius:10px;min-height:44px;padding:10px 12px;font:600 12px var(--sans);width:100%;text-align:left}
+.photon-projects-link:hover,.photon-projects-link[aria-current="page"]{background:#8070da30;border-color:#a695ff50;color:#f2edff}
+.photon-project-icon{width:17px;height:17px;flex:none}
+.photon-modern .topbar{padding:15px 23px;min-height:76px;gap:8px;background:var(--panel)}
+.photon-modern .topbar #repoBtn{font-size:13px;padding:8px 9px;max-width:220px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.photon-context-icon{width:15px;height:15px;flex:none;color:var(--muted)}
+.photon-modern #branchBtn{font-family:var(--sans);font-weight:600;font-size:11px;background:var(--panel)}
+.photon-modern .btn{border-radius:9px;font-size:12px;padding:9px 13px;letter-spacing:0}
+.photon-modern .btn.sm{padding:8px 10px;font-size:11px}
+.photon-modern .btn.primary{box-shadow:0 3px 7px #5945d620}
+.photon-modern .btn.primary:hover{filter:brightness(1.04)}
+.photon-modern .btn:hover{border-color:var(--accent);color:var(--aink)}
+.photon-modern .btn.primary:hover{color:var(--primary-ink)}
+.photon-modern #globalSearch{font-size:11px;background:var(--bg);width:156px!important}
+.photon-modern #helpBtn{border-color:var(--line2);background:var(--panel)}
+.photon-modern #photonWorkspaceStatus{font-size:9px;background:var(--bg);border:1px solid var(--line);padding:7px 8px}
+.photon-modern .cl{padding:26px}
+.photon-editor-heading{margin:0 0 23px}
+.photon-editor-heading>span{font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--aink)}
+.photon-editor-heading h1{margin:7px 0 6px;font-size:26px;line-height:1.25;letter-spacing:-.045em;font-weight:650}
+.photon-editor-heading p{margin:0;color:var(--muted);font-size:12px}
+.photon-modern .meta{border-radius:13px;padding:19px 20px;margin-bottom:20px;box-shadow:none}
+.photon-modern .meta .title input{font-size:17px;font-weight:650}
+.photon-modern .mapwrap{border-radius:15px;padding-top:58px;background:radial-gradient(var(--line2) .6px,transparent .6px) 0 0/20px 20px,var(--panel);box-shadow:var(--shadow)}
+.photon-modern #mapView{height:370px}
+.photon-modern .legend{background:transparent;padding-top:14px;font-size:10px}
+.photon-modern .cr{margin:26px 24px 26px 0;border-radius:15px;background:var(--panel);box-shadow:none}
+.photon-modern .tabs{padding:8px 8px 0;background:var(--bg)}
+.photon-modern .tab{font-size:11px;border-radius:8px 8px 0 0;padding:11px 12px}
+.photon-modern .tab.active{background:var(--panel);border-bottom-color:var(--accent);color:var(--aink)}
+.photon-modern .frow{border-radius:10px;padding:12px 10px;min-height:52px;box-shadow:0 2px 5px #17182a02}
+.photon-modern .frow.sel{background:var(--aw);box-shadow:inset 2px 0 var(--accent)}
+.photon-modern .seqcard{border-radius:14px;box-shadow:none;padding:20px}
+.photon-modern .page{padding:35px 34px;max-width:1200px}
+.photon-modern .page h2.ph{font-size:29px;letter-spacing:-.045em}
+.photon-modern .dashboard-heading{padding-bottom:20px;align-items:center}
+.photon-modern .dashboard-heading .sub{margin:7px 0 0}
+.photon-modern #projectSearch{margin-top:8px;background:var(--panel);padding:13px 15px;border-radius:11px}
+.photon-modern label[for="projectSearch"]{font-size:10px;font-weight:600;color:var(--muted)}
+.photon-modern .project-grid{margin-top:24px;gap:18px}
+.photon-modern .project-card{flex-direction:column;align-items:stretch;gap:18px;padding:20px;border-radius:15px;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.photon-modern .project-card:hover{transform:translateY(-2px)}
+.photon-modern .project-card svg{height:100px;width:100%;border-radius:9px;background:var(--bg);padding:6px}
+.photon-modern .project-card b{font-size:15px;font-weight:650;letter-spacing:-.02em}
+.photon-modern .project-card .mini{font-size:11px;line-height:1.6}
+.photon-modern .project-card .mini:last-child{padding-top:12px;border-top:1px solid var(--line);margin-top:13px;font-size:10px}
+.photon-modern .named-versions{background:var(--panel);border-radius:14px;padding:20px}
+.photon-modern .draft-notice{background:var(--aw);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:10px 12px;line-height:1.7}
+.photon-modern #photonToolHelp{color:var(--aink);border-color:var(--line);background:var(--bg);font-size:10px;margin:12px 15px 0}
+@media(max-width:1220px){
+ .photon-modern .app{grid-template-columns:190px minmax(0,1fr)}
+ .photon-modern .cl{padding:20px}.photon-modern .cr{margin:20px 20px 20px 0}
+ .photon-modern .topbar{padding:12px 18px}.photon-modern #globalSearch{display:none}
+}
+@media(max-width:1020px){.photon-modern .cr{margin:0 20px 20px}.photon-modern .cl{padding:20px}}
+@media(max-width:760px){
+ .photon-modern .app{grid-template-columns:minmax(0,1fr)}
+ .photon-modern .nav{padding:6px 10px;gap:3px;background:#17182c}
+ .photon-workspace-brand,.photon-nav-heading,.photon-workspace-footer,.photon-projects-link{display:none}
+ .photon-modern .navt{min-height:36px;padding:9px 10px;font-size:11px;margin:0;flex:none}
+ .photon-modern .topbar{padding:10px 12px;gap:6px}
+ .photon-modern .topbar #repoBtn{max-width:160px;font-size:11px;padding:7px}
+ .photon-modern .cl{padding:15px 12px}.photon-modern .cr{margin:0 12px 16px}
+ .photon-editor-heading{margin-bottom:17px}.photon-editor-heading h1{font-size:24px}.photon-editor-heading p{font-size:11px;line-height:1.6}
+ .photon-modern .meta{padding:15px;gap:13px}.photon-modern #mapView{height:300px}
+ .photon-modern .page{padding:24px 16px}.photon-modern .page h2.ph{font-size:27px}
+ .photon-modern .project-card{padding:17px}.photon-modern .project-card:hover{transform:none}
+ .photon-modern .project-grid{grid-template-columns:minmax(0,1fr)}
+}
+.photon-modern :is(button,input,select,textarea,summary,a):focus-visible{outline-color:var(--accent)}.photon-modern .nav :is(button,a):focus-visible{outline-color:#c4b6ff}

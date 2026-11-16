@@ -1,6 +1,8 @@
 /** Presentation-only enhancements. No data writes or replacement editor handlers. */
 const NS='http://www.w3.org/2000/svg';
 const paths={
+ genome:'M7 2c0 7 10 13 10 20M17 2c0 7-10 13-10 20M8 5h8M8 19h8M9 9h6M9 15h6',
+ projects:'M3 6h7l2 3h9v12H3zM3 6V3h8l2 3',
  code:'M8 3H4v18h4M16 3h4v18h-4M9 7l6 10M15 7L9 17',
  commits:'M12 8v4l3 2M3 12a9 9 0 1 0 3-6M3 4v5h5',
  compare:'M5 3v18M19 3v18M5 8h9l-3-3M19 16h-9l3 3',
@@ -28,9 +30,11 @@ function icon(name,className){
 function decorateNav(){
  const nav=document.getElementById('nav');if(!nav)return;
  if(!nav.querySelector('.photon-workspace-brand')){
-  const brand=document.createElement('div');brand.className='photon-workspace-brand';brand.append(icon('code'),document.createTextNode('Photon'));
+  const brand=document.createElement('div');brand.className='photon-workspace-brand';brand.append(icon('genome'),document.createTextNode('Photon'));
   const alpha=document.createElement('small');alpha.textContent='Alpha';brand.append(alpha);
-  const heading=document.createElement('div');heading.className='photon-nav-heading';heading.textContent='DESIGN WORKSPACE';nav.prepend(brand,heading);
+  const heading=document.createElement('div');heading.className='photon-nav-heading';heading.textContent='WORKSPACE';
+  const projects=document.createElement('button');projects.className='photon-projects-link';projects.type='button';projects.append(icon('projects','photon-project-icon'),document.createTextNode('Projects'));projects.onclick=()=>document.getElementById('homeBtn').click();
+  nav.prepend(brand,projects,heading);
   const footer=document.createElement('div');footer.className='photon-workspace-footer';footer.textContent='Your designs, versioned.';
   const note=document.createElement('span');note.textContent='Local browser workspace';footer.append(note);nav.append(footer);
  }
@@ -50,6 +54,7 @@ function iconAction(node,name){
 function decorateToolbar(){
  for(const [id,name] of [['photonBackup','download'],['photonRecoveryCenter','commits']])iconAction(document.getElementById(id),name);
  iconAction(document.getElementById('photonRestoreInput')?.closest('label'),'upload');
+ for(const [id,name] of [['repoBtn','genome'],['branchBtn','branches']]){const button=document.getElementById(id);if(button&&!button.querySelector('.photon-context-icon'))button.prepend(icon(name,'photon-context-icon'));}
  for(const label of document.querySelectorAll('.topbar label.btn'))if(!label.dataset.photonFileButton){
   const input=label.querySelector('input[type=file]')??document.getElementById(label.htmlFor);
   if(!input)continue;
@@ -73,6 +78,17 @@ function refreshStatus(){
  if(state.dataset.tone!==tone)state.dataset.tone=tone;
 }
 function decorateView(){
+ const projects=document.querySelector('.photon-projects-link');
+ if(projects){if(document.getElementById('projectSearch'))projects.setAttribute('aria-current','page');else projects.removeAttribute('aria-current');}
+ const column=document.querySelector('.cl');
+ if(column&&!column.querySelector('.photon-editor-heading')){
+  const heading=document.createElement('header');heading.className='photon-editor-heading';
+  const eyebrow=document.createElement('span');eyebrow.textContent='DNA WORKSPACE';
+  const title=document.createElement('h1');title.textContent='Design your next revision';
+  const subtitle=document.createElement('p');subtitle.textContent='Explore annotations, refine sequences and keep a clear history.';
+  heading.append(eyebrow,title,subtitle);column.prepend(heading);
+ }
+
  for(const wrap of document.querySelectorAll('.mapwrap'))if(!wrap.querySelector('.photon-map-caption')){
   const caption=document.createElement('span');caption.className='photon-map-caption';caption.textContent='CONSTRUCT MAP';wrap.prepend(caption);
  }

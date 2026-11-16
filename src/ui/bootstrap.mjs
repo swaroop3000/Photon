@@ -10,6 +10,8 @@ import {curatedDigest,curatedRestrictionSites} from '../core/curated-digest.mjs'
 globalThis.PhotonCuratedDigest={digest:curatedDigest,sites:curatedRestrictionSites};
 globalThis.PhotonSequenceWindow=sequenceWindow;
 globalThis.PhotonCDS={interpret:interpretCDS};
+// Style/navigation must initialize independently of project and optional draft stores.
+await import('./modern-workspace.mjs');
 const legacyStorage={get length(){return localStorage.length;},key:i=>localStorage.key(i),getItem:key=>localStorage.getItem(key)};
 const fenceStorage={getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)};
 await globalThis.PhotonInitializeStorage(createIndexedProjectStorage({legacyStorage,fenceStorage}),createProjectCommands);
@@ -43,10 +45,7 @@ const modules=[
   'dashboard-tools.mjs',
   'mvp-tools.mjs',
   'drop-import-tools.mjs',
-  'mvp-tools.mjs',
-  'drop-import-tools.mjs',
   'application-download.mjs',
-  'modern-workspace.mjs',
 ];
 for(const module of modules){
  try{await import('./'+module);}

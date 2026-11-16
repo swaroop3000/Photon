@@ -68,12 +68,12 @@ body{transition:background .22s ease,color .22s ease}
 </style>
 <link rel="stylesheet" href="src/ui/modern-workspace.css">
 </head>
-<body>
+<body class="photon-modern">
 <div class="app">
   <div class="topbar">
     <span class="logo">Pho<b>ton</b></span>
-    <div class="dd"><button class="btn" id="repoBtn">📁 <span id="repoName">repo</span> ▾</button><div class="ddp" id="repoDD"></div></div>
-    <div class="dd"><button class="btn" id="branchBtn">⑂ <span id="branchName">main</span> ▾</button><div class="ddp" id="branchDD"></div></div>
+    <div class="dd"><button class="btn" id="repoBtn"><span id="repoName">repo</span> ▾</button><div class="ddp" id="repoDD"></div></div>
+    <div class="dd"><button class="btn" id="branchBtn"><span id="branchName">main</span> ▾</button><div class="ddp" id="branchDD"></div></div>
     <span class="dirty" id="dirty"></span><span class="lock" id="lock"></span>
     <div class="spacer"></div>
     <input id="globalSearch" placeholder="Search commits & issues…" style="width:190px" oninput="doSearch(this.value)">
@@ -237,7 +237,7 @@ document.getElementById('fileIn').onchange=e=>{const f=e.target.files[0];if(!f)r
 if(!/^\s*LOCUS\b/im.test(raw)&&!/<sbol\s*:\s*SBOL\b/i.test(raw))autoAnn(w);
 U.sel=-1;save();flash('Imported '+f.name);render();}}catch(error){flash('Import rejected: '+error.message);}};rd.onerror=()=>flash('Could not read import file');rd.readAsText(f);e.target.value='';};
 /* nav */
-const TABS=[['code','Code'],['commits','Commits'],['compare','Compare'],['branches','Branches'],['pulls','Pull Requests'],['issues','Issues'],['wiki','Wiki'],['insights','Insights'],['settings','Settings']];
+const TABS=[['code','Design'],['commits','Commits'],['compare','Compare'],['branches','Branches'],['pulls','Pull Requests'],['issues','Issues'],['wiki','Wiki'],['insights','Insights'],['settings','Settings']];
 function renderNav(){const r=repo();document.getElementById('nav').innerHTML=TABS.map(([k,l])=>{let c='';if(k==='commits')c=Object.keys(r.commits).length;if(k==='branches')c=Object.keys(r.branches).length;if(k==='pulls')c=r.pulls.filter(p=>p.status==='open').length;if(k==='issues')c=r.issues.filter(i=>i.status==='open').length;return`<button class="navt ${DB.tab===k?'active':''}" data-t="${k}">${l}${c?`<span class="cnt">${c}</span>`:''}</button>`;}).join('');document.querySelectorAll('.navt').forEach(b=>b.onclick=()=>{DB.tab=b.dataset.t;save();render();});}
 /* dispatcher */
 function render(){if(!TABS.some(([key])=>key===DB.tab)&&DB.tab!=='home')DB.tab='code';renderChrome();renderNav();const v=document.getElementById('view');const t=DB.tab;({code:renderCode,commits:renderCommits,compare:renderCompare,branches:renderBranches,pulls:renderPulls,issues:renderIssues,wiki:renderWiki,insights:renderInsights,settings:renderSettings}[t]||renderCode)(v);}

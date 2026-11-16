@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
 import {createExampleProject} from './project-ui-helpers.mjs';
 import {settled,faultProjectWrites} from './storage-helpers.mjs';
@@ -68,5 +69,29 @@ test('import file control is keyboard accessible and still opens a real import r
   await(await pending).setFiles({name:'keyboard.fasta',mimeType:'text/plain',buffer:Buffer.from('>KeyboardImport\nAACCGGTT\n')});
   await page.locator('#impApply').waitFor();await page.locator('#impApply').click();await settled(page);
   assert.equal(await page.evaluate(()=>PhotonEditorBridgeHost.working().seq),'AACCGGTT');
+ }finally{await browser.close();}
+});
+test('modern shell is present before JavaScript and is independent of a stalled optional draft module',async()=>{
+ const browser=await chromium.launch();try{
+  const noScript=await browser.newPage({javaScriptEnabled:false});await noScript.goto(APP_URL,{waitUntil:'domcontentloaded'});
+  assert.equal(await noScript.locator('body').getAttribute('class'),'photon-modern');assert.equal(await noScript.locator('.app').evaluate(el=>getComputedStyle(el).display),'grid');await noScript.close();
+  const page=await browser.newPage();await page.route('**/src/ui/draft-tools.mjs',route=>route.fulfill({status:200,contentType:'text/javascript',body:'await new Promise(() => {});'}));await page.goto(APP_URL,{waitUntil:'domcontentloaded'});await page.locator('.photon-workspace-brand').waitFor();await page.waitForFunction(()=>window.PhotonEditorBridgeReady&&window.PhotonProjects);
+  assert.equal(await page.locator('.app').evaluate(el=>getComputedStyle(el).display),'grid');assert.equal(await page.locator('.photon-projects-link').count(),1);assert.equal(await page.locator('#helpBtn').innerText(),'Tutorial');assert.ok((await page.evaluate(()=>PhotonProjects.readSnapshot())).data.repos);
+ }finally{await browser.close();}
+});
+test('refreshed projects navigation and cards fit desktop and phone while retaining full project snapshots',async()=>{
+ const browser=await chromium.launch();try{
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});await visit(page);await sample(page);const before=await page.evaluate(()=>PhotonProjects.readSnapshot());
+  assert.equal(await page.locator('.photon-editor-heading h1').innerText(),'Design your next revision');await page.locator('.photon-projects-link').click();await page.locator('#projectSearch').waitFor();assert.equal(await page.locator('.photon-projects-link').getAttribute('aria-current'),'page');
+  assert.deepEqual(await page.evaluate(()=>PhotonProjects.readSnapshot()),before);await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));const card=await page.locator('.project-card').first().boundingBox();assert.ok(card.x>=0&&card.x+card.width<=390);await page.locator('#projectSearch').fill('Example_DNA');await page.locator('.project-card').click();await settled(page);assert.deepEqual((await page.evaluate(()=>PhotonProjects.readSnapshot())).data.repos,before.data.repos);
+ }finally{await browser.close();}
+});
+
+test('built entrypoint selects the exact stylesheet revision while the portable package keeps its asset paths',async()=>{
+ const browser=await chromium.launch();try{
+  const page=await browser.newPage(),htmlResponse=await page.request.get(APP_URL+'dist/');assert.equal(htmlResponse.ok(),true);const html=await htmlResponse.text();
+  const match=html.match(/href="src\/ui\/modern-workspace\.css\?v=([a-f0-9]{16})"/);assert.ok(match,'built stylesheet must have a revision key');
+  const cssResponse=await page.request.get(APP_URL+'dist/src/ui/modern-workspace.css?v='+match[1]);assert.equal(cssResponse.ok(),true);assert.equal(createHash('sha256').update(await cssResponse.body()).digest('hex').slice(0,16),match[1]);
+  const manifest=await (await page.request.get(APP_URL+'dist/photon-app-manifest.json')).json();assert.ok(manifest.files.some(f=>f.path==='src/ui/modern-workspace.css'));assert.ok(!manifest.files.some(f=>f.path.includes('?')));
  }finally{await browser.close();}
 });
