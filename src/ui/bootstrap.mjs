@@ -38,6 +38,7 @@ const modules=[
   'construct-qc-tools.mjs',
   'translation-explorer-tools.mjs',
   'investor-demo-tools.mjs',
+  'modern-workspace.mjs',
 ];
 for(const module of modules){
  try{await import('./'+module);}

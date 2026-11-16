@@ -1,0 +1,172 @@
+/* Photon workspace design system. Existing editor/DOM contracts remain intact. */
+:root,html[data-theme="light"]{
+ --bg:#f3f6f5;--panel:#ffffff;--ink:#172c29;--muted:#607570;--line:#e1e9e6;--line2:#cbd8d3;
+ --accent:#087f69;--aink:#086b59;--aw:#e7f5ef;--bd:#edf3f0;
+ --shadow:0 2px 5px #14382c03,0 8px 24px #14382c04;--r:16px;
+ --sans:Inter,"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+ --cds:#17a37e;--promoter:#5684eb;--misc:#8b9eaa;
+ --primary-ink:#ffffff;--sidebar:#142523;--sidebar-ink:#e2ede8;--sidebar-muted:#91a9a0;--hero:#163c34;
+}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]){
+ --bg:#101b19;--panel:#182723;--ink:#e5f0eb;--muted:#a0b7ac;--line:#2d4039;--line2:#40574b;
+ --primary-ink:#102e23;--accent:#52c9a5;--aink:#8de0bf;--aw:#233e32;--bd:#12201a;--shadow:0 8px 24px #00000012;--hero:#1b3c32;
+}}
+html[data-theme="dark"]{
+ --bg:#101b19;--panel:#182723;--ink:#e5f0eb;--muted:#a0b7ac;--line:#2d4039;--line2:#40574b;
+ --primary-ink:#102e23;--accent:#52c9a5;--aink:#8de0bf;--aw:#233e32;--bd:#12201a;--shadow:0 8px 24px #00000012;--hero:#1b3c32;
+}
+body.photon-modern{font-size:13px;letter-spacing:-.012em}
+.photon-modern .app{display:grid;grid-template-columns:208px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);height:100vh;height:100dvh;min-width:0}
+.photon-modern .topbar{grid-column:2;grid-row:1;min-width:0;min-height:72px;padding:14px 24px;gap:8px;background:var(--panel)}
+.photon-modern .topbar>.logo{display:none}
+.photon-modern .topbar .btn{white-space:nowrap}
+.photon-modern .topbar #repoBtn{max-width:230px;background:transparent;border-color:transparent;font-size:14px;font-weight:650}
+.photon-modern #repoName{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.photon-modern #branchBtn{background:var(--bg);border-color:var(--line);font-family:var(--mono);font-size:11px}
+.photon-modern #globalSearch{width:170px!important;min-width:100px}
+.photon-modern #dirty{display:none}
+.photon-modern .btn{border-radius:9px;background:var(--panel);border-color:var(--line2);padding:8px 13px;font-weight:550;transition:background .15s,border-color .15s,box-shadow .15s}
+.photon-modern .btn.sm{font-size:11px;padding:7px 10px}
+.photon-modern .btn:hover{background:var(--aw);border-color:var(--accent)}
+.photon-modern .btn.primary{transition:box-shadow .15s;background:var(--accent);color:var(--primary-ink);border-color:var(--accent);box-shadow:0 2px 4px #00462e12}
+.photon-modern .btn.primary:hover{background:var(--accent);color:var(--primary-ink)}
+.photon-modern .btn:disabled{cursor:not-allowed;opacity:.43;box-shadow:none}
+.photon-modern .photon-icon-action{width:34px;height:34px;min-width:34px;padding:8px!important;justify-content:center;background:transparent;border-color:transparent}
+.photon-icon-action svg{width:17px;height:17px;flex:none}
+.photon-action-label{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.photon-modern #photonWorkspaceStatus{font-size:10px;letter-spacing:0;white-space:nowrap;color:var(--muted);padding:5px 8px;border-radius:7px;background:var(--bg);display:inline-flex;align-items:center;gap:6px}
+#photonWorkspaceStatus::before{content:'';width:5px;height:5px;border-radius:50%;background:#239e76;flex:none}
+#photonWorkspaceStatus[data-tone="draft"]::before{background:#b88326}
+#photonWorkspaceStatus[data-tone="error"]::before{background:#da624d}
+#photonWorkspaceStatus[data-tone="saving"]::before{background:#5684eb}
+.photon-modern .nav{grid-column:1;grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;padding:0 14px 18px;gap:4px;overflow-x:hidden;overflow-y:auto;background:var(--sidebar);border:0;color:var(--sidebar-ink)}
+.photon-workspace-brand{display:flex;align-items:center;gap:10px;height:84px;padding:0 10px;font-size:23px;font-weight:650;letter-spacing:-1px;color:#eff9f3;flex:none}
+.photon-workspace-brand svg{width:31px;height:31px;color:#8cdbb5}
+.photon-workspace-brand small{font-size:9px;letter-spacing:.04em;text-transform:uppercase;align-self:center;border:1px solid #5d8270;color:#b9d6c7;border-radius:4px;padding:2px 5px;margin-left:3px;font-weight:500}
+.photon-nav-heading{font-size:9px;font-weight:600;letter-spacing:.15em;color:var(--sidebar-muted);padding:14px 12px 9px}
+.photon-modern .navt{display:flex;align-items:center;gap:10px;position:relative;min-height:40px;padding:10px 12px;border:0;border-radius:8px;font-size:12px;color:#b2c5bc;text-align:left;white-space:nowrap;flex:none}
+.photon-modern .navt:hover{background:#ffffff08;color:#f0f8f4}
+.photon-modern .navt.active{color:#e9f9ed;background:#2c4a3c;font-weight:600;box-shadow:inset 2px 0 #8bdbb2}
+.photon-nav-icon{height:16px;width:16px;flex:none;opacity:.9}
+.photon-modern .navt .cnt{margin-left:auto;font-size:9px;background:#ffffff0d;color:#c6dbcf;min-width:21px;text-align:center;padding:0 5px}
+.photon-workspace-footer{margin-top:auto;padding:28px 12px 0;line-height:1.7;font-size:11px;color:#bbd1c3}
+.photon-workspace-footer span{display:block;color:var(--sidebar-muted);font-size:10px;margin-top:4px}
+.photon-modern .body{grid-column:2;grid-row:3;min-width:0;min-height:0;overflow:auto}
+.photon-modern .code{grid-template-columns:minmax(0,1fr) 332px;min-width:0}
+.photon-modern .cl{min-width:0;padding:22px}
+.photon-modern .cr{min-width:0;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:22px 22px 22px 0;overflow:hidden}
+.photon-modern .card{box-shadow:var(--shadow)}
+.photon-modern .meta{padding:17px 20px;gap:12px 21px;margin-bottom:18px}
+.photon-modern .meta .title{flex:1;min-width:170px}
+.photon-modern .meta .title input{max-width:100%;font-size:17px;letter-spacing:-.025em}
+.photon-modern .st{padding-right:7px}
+.photon-modern .st .v{font-size:15px;letter-spacing:-.03em;color:var(--ink)}
+.photon-modern .st .l{font-size:8px;font-weight:600;letter-spacing:.1em;margin-top:2px}
+.photon-modern .pill{background:var(--aw);font-size:10px;padding:5px 10px}
+.photon-modern .mapwrap{padding:54px 15px 16px;margin-bottom:18px;isolation:isolate;background:radial-gradient(var(--line) .65px,transparent .65px) 0 0/16px 16px,var(--panel)}
+.photon-modern #mapView{height:400px}
+.photon-modern #mapView text[font-size="15"]{font-size:20px}
+.photon-modern #mapView text[font-size="12"]{font-size:13px}
+.photon-modern #mapView text[font-size="10"]{font-size:12px}
+.photon-modern.photon-investor #mapView{height:360px}
+.photon-map-caption{position:absolute;top:23px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:600;letter-spacing:.13em;color:var(--muted);white-space:nowrap}
+.photon-modern .maptabs{gap:0;background:var(--bg);padding:3px;border:1px solid var(--line);border-radius:8px}
+.photon-modern .maptab{border:0;border-radius:5px;padding:5px 10px;background:transparent;font-size:10px}
+.photon-modern .maptab.active{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px #11251c15;font-weight:600}
+.photon-modern .legend{border-top:1px solid var(--line);padding:12px 5px 0;gap:8px 14px;font-size:10px;background:var(--panel);margin-top:5px}
+.photon-modern .legend i{width:7px;height:7px;border-radius:2px}
+.photon-modern .seqcard{padding:19px 20px}
+.photon-modern .seccap,.photon-modern .cr h3{font-size:10px;letter-spacing:.11em;font-weight:650}
+.photon-modern .seqview{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:12px;font-size:11px;line-height:1.9}
+.photon-modern .seqview .num{font-size:10px;opacity:.7}
+.photon-modern textarea{line-height:1.7;border-color:var(--line);border-radius:9px;background:var(--bg)}
+.photon-modern input,.photon-modern select{border-color:var(--line);background:var(--bg)}
+.photon-modern .tabs{padding:6px 8px 0;gap:2px}
+.photon-modern .tab{font-size:11px;padding:11px 12px}
+.photon-modern .tab.active{font-weight:600}
+.photon-modern .tabbody{padding:18px 15px}
+.photon-modern .frow{border-color:var(--line);border-radius:9px;min-height:48px;padding:10px;margin-bottom:8px;gap:8px}
+.photon-modern .frow:hover{background:var(--bg);border-color:var(--line2)}
+.photon-modern .frow.sel{background:var(--aw);border-color:var(--accent)}
+.photon-modern .fdot{width:7px;height:7px;border-radius:50%}
+.photon-modern .fname{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.photon-modern .floc{font-size:10px;white-space:nowrap}
+.photon-modern .fdel{font-size:14px;opacity:.6}
+.photon-modern .page{max-width:1120px;padding:28px 30px}
+.photon-modern .page h2.ph{font-size:25px;font-weight:650;letter-spacing:-.04em}
+.photon-modern .commit,.photon-modern .branchrow,.photon-modern .prrow{border-radius:12px;padding:16px}
+.photon-modern .commit .msg{font-weight:600}
+.photon-modern .ddp{border-radius:12px;padding:8px;box-shadow:0 16px 50px #0d241c1c}
+.photon-modern .modal-bg{background:#081c1460;backdrop-filter:blur(5px)}
+.photon-modern .modal{border-radius:18px;padding:26px;box-shadow:0 25px 100px #00150d30}
+.photon-modern :is(button,input,select,textarea,summary,a):focus-visible{outline:3px solid #36a37e;outline-offset:3px}
+.photon-modern .btn.primary:focus-visible{outline-color:#7fbdab}
+.photon-modern .app #photonInvestorPanel{grid-column:2;grid-row:2;position:relative;display:grid;grid-template-columns:minmax(250px,.8fr) minmax(0,1.3fr);align-items:center;gap:28px;margin:22px 22px 0;padding:25px 28px;background:var(--hero);color:#eef8f1;border:1px solid #31634b;border-radius:16px;box-shadow:none}
+.photon-modern .app #photonInvestorPanel[hidden]{display:none}
+.photon-demo-intro>.mini{font-size:8px;letter-spacing:.13em;color:#9dc8ad;margin-bottom:11px}
+.photon-modern .app #photonInvestorPanel h1{font-size:clamp(24px,2.25vw,34px);line-height:1.13;letter-spacing:-.045em;max-width:390px;margin:0 0 10px;font-weight:600}
+.photon-modern .app #photonInvestorPanel p{font-size:11px;color:#bad6c4;line-height:1.6;margin:4px 0}
+.photon-modern .app #photonInvestorPanel #photonInvestorStatus{font-size:11px;min-height:30px;color:#e5f1e9}
+.photon-modern .app #photonInvestorPanel .demo-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
+.photon-modern .app #photonInvestorPanel .demo-actions .btn{justify-content:center;text-align:center;background:#ffffff08;color:#eff8f2;border-color:#ffffff30;font-size:10px;padding:9px 6px;min-width:0}
+.photon-modern .app #photonInvestorPanel .demo-actions .btn:hover{background:#ffffff16;border-color:#b8e6c8}
+.photon-modern .app #photonInvestorPanel #photonInvestorStart{grid-column:span 2;background:#b9edce;border-color:#b9edce;color:#15372b;font-weight:650}
+.photon-modern .app #photonInvestorPanel #photonInvestorSampleFile{grid-column:span 2}
+.photon-modern .app #photonInvestorPanel .demo-scope{font-size:10px;color:#a7c8b4;margin-top:9px;line-height:1.5}
+#photonGuideToggle{position:absolute;top:10px;right:13px;border:0;background:transparent;color:#b8dcc5;font-size:9px;padding:3px 5px;border-radius:4px}
+.photon-modern .app #photonInvestorPanel.photon-guide-collapsed{grid-template-columns:1fr;padding-top:20px;padding-bottom:18px}
+.photon-guide-collapsed .photon-demo-workflow,.photon-guide-collapsed .photon-demo-intro>p{display:none}
+.photon-modern .app #photonInvestorPanel.photon-guide-collapsed h1{font-size:23px;margin:0;max-width:none}
+.photon-guide-collapsed .photon-demo-intro>.mini{margin-bottom:5px}
+@media(max-width:1220px){
+ .photon-modern .app{grid-template-columns:180px minmax(0,1fr)}
+ .photon-modern .topbar{padding:12px 17px}
+ .photon-modern #photonWorkspaceStatus{font-size:9px}
+ .photon-modern .code{grid-template-columns:minmax(0,1fr) 300px}
+ .photon-modern .cl{padding:17px}
+ .photon-modern .cr{margin:17px 17px 17px 0}
+ .photon-modern .app #photonInvestorPanel{margin:17px 17px 0;padding:23px;gap:20px;grid-template-columns:minmax(220px,.75fr) minmax(0,1.3fr)}
+ .photon-modern .app #photonInvestorPanel h1{font-size:27px}
+ .photon-map-caption{display:none}
+}
+@media(max-width:1020px){
+ .photon-modern .code{grid-template-columns:minmax(0,1fr);height:auto;min-height:100%}
+ .photon-modern .cl{overflow:visible}
+ .photon-modern .cr{margin:0 17px 20px;min-height:300px;max-height:650px}
+ .photon-modern .app #photonInvestorPanel{grid-template-columns:1fr;gap:14px}
+ .photon-modern .app #photonInvestorPanel h1{max-width:none}
+ .photon-modern .meta .title{flex:1 1 100%}
+}
+@media(max-width:760px){
+ .photon-modern .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr)}
+ .photon-modern .topbar{grid-column:1;grid-row:1;padding:10px 12px;gap:6px;min-height:60px}
+ .photon-modern .topbar .ddp{position:fixed;left:12px;right:12px;top:calc(var(--photon-toolbar-height,100px) + 6px);width:auto;min-width:0;max-height:min(380px,calc(100dvh - var(--photon-toolbar-height,100px) - 24px))}
+ .photon-modern .topbar>.logo{display:inline-flex;font-size:19px;margin-right:6px}
+ .photon-modern .topbar #repoBtn{max-width:175px;font-size:12px;padding:5px 7px}
+ .photon-modern #branchBtn{padding:5px 7px}
+ .photon-modern #globalSearch{display:none}
+ .photon-modern .topbar .spacer{display:none}
+ .photon-modern .nav{grid-column:1;grid-row:2;flex-direction:row;padding:5px 9px;gap:3px;overflow-x:auto;overflow-y:hidden}
+ .photon-workspace-brand,.photon-nav-heading,.photon-workspace-footer{display:none}
+ .photon-modern .navt{min-height:35px;padding:8px 10px;font-size:11px;gap:6px}
+ .photon-nav-icon{height:13px;width:13px}
+ .photon-modern .body{grid-column:1;grid-row:4}
+ .photon-modern .app #photonInvestorPanel{grid-column:1;grid-row:3;margin:12px 12px 0;padding:22px 16px 15px;gap:10px}
+ .photon-modern .app #photonInvestorPanel h1{font-size:25px}
+ .photon-modern .app #photonInvestorPanel .demo-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .photon-modern .app #photonInvestorPanel #photonInvestorStart,.photon-modern .app #photonInvestorPanel #photonInvestorSampleFile{grid-column:span 1}
+ .photon-modern .app #photonInvestorPanel .demo-scope{font-size:9px}
+ .photon-demo-intro>.mini{margin-bottom:6px}
+ .photon-demo-intro>p{display:none}
+ .photon-modern .cl{padding:12px}
+ .photon-modern .cr{margin:0 12px 16px}
+ .photon-modern .meta{padding:14px;gap:12px 16px}
+ .photon-modern .meta .title input{font-size:17px}
+ .photon-modern .meta .title{min-width:0}
+ .photon-modern .seqcard{padding:15px 12px}
+ .photon-modern #mapView,.photon-modern.photon-investor #mapView{height:300px}
+ .photon-modern .page{padding:22px 15px}
+ .photon-modern .row2{grid-template-columns:minmax(0,1fr)}
+ .photon-modern .modal{padding:21px 17px}
+}
+@media(prefers-reduced-motion:reduce){.photon-modern,.photon-modern *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}

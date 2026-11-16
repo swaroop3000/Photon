@@ -14,6 +14,7 @@ work, not automatic blockers for a truthful synthetic investor demonstration.
   sample import into a separate project, actual edit/undo/commit/export controls.
 - [x] Preserve existing projects, failed-save rollback and unapplied text across
   presentation toggles; browser regression coverage.
+- [x] Modern workspace shell, responsive desktop/phone layout, dark/light styling, keyboard file controls and collapsible investor guide. Actual save/draft/failure status; no fake team/remote indicators. Five new browser regressions and synthetic screenshots document scope.
 - [ ] Founder rehearsal and review of a shareable hosted preview if needed.
 
 ## 1. Sequence editing

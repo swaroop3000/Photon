@@ -18,6 +18,12 @@ customer traction, biological results or remote collaboration are added.
 
 ## Open and rehearse
 
+The feature build has a modern workspace with desktop sidebar navigation,
+responsive panels and light/dark themes. **Hide guide** gives the map/editor more
+room; **Show guide** restores the walkthrough without changing project data.
+Preview captures: [desktop](reports/2026-11-16/ui/desktop.png),
+[dark](reports/2026-11-16/ui/dark.png), [phone](reports/2026-11-16/ui/mobile.png).
+
 Use the feature build with `?demo=investor` appended to its URL, or select
 **Investor demo** in the top bar. For a local presentation:
 

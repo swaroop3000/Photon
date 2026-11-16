@@ -1,5 +1,22 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: modern workspace UI/UX — November 16, 2026
+
+- Continues `452571b`. New `modern-workspace.css` / `modern-workspace.mjs` provide
+  a charcoal sidebar, compact labeled toolbar utilities, consistent teal cards/type,
+  responsive workspace panels/menus and an improved collapsible investor guide.
+- The existing DOM IDs, editor/data handlers and full application remain in use.
+  File controls gain keyboard activation; icons retain accessible labels. Status
+  is derived from actual project/draft/storage state, including failed saves.
+- Local verification: 280 core and 96 Chromium tests passed, zero failures/skips.
+  Static build, 73-asset Wrangler dry run and built-site investor workflow passed.
+  Five new cases cover real navigation, status failures, responsive bounds and
+  guide state, theme contrast/reduced motion and keyboard file import. Actual
+  light/dark/phone screenshots use only synthetic samples.
+- See `reports/2026-11-16/MODERN-UI-VALIDATION.md` and `ui/README.md` alongside it.
+  This is a UI milestone within the investor MVP, not broader biology expansion.
+  Keep PR #1 draft, main and production protected; founder rehearsal remains next.
+
 ## Immediate goal change: investor MVP — November 16, 2026
 
 The user needs a minimal viable product for investors, not completion of the full
