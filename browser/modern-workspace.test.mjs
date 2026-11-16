@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {settled,faultProjectWrites} from './storage-helpers.mjs';
 const APP_URL='http://127.0.0.1:8765/';
-async function visit(page){await page.goto(APP_URL+'?demo=investor',{waitUntil:'networkidle'});}
+async function visit(page){await page.goto(APP_URL+'?demo=investor',{waitUntil:'networkidle'});await settled(page);}
 async function sample(page){await page.locator('#photonInvestorStart').click();await settled(page);}
 test('workspace sidebar remains usable across real history navigation and retains original data',async()=>{
  const browser=await chromium.launch();try{
@@ -70,9 +70,9 @@ test('dark/light primary actions retain readable contrast and reduced-motion pre
 });
 test('import file control is keyboard accessible and still opens a real import review',async()=>{
  const browser=await chromium.launch();try{
-  const page=await browser.newPage();await visit(page);
+  const page=await browser.newPage();await visit(page);await sample(page);
   const label=page.locator('label[for="fileIn"]');assert.equal(await label.getAttribute('role'),'button');await label.focus();
-  const pending=page.waitForEvent('filechooser');await page.keyboard.press('Enter');
+  const pending=page.waitForEvent('filechooser');await label.press('Enter');
   await(await pending).setFiles({name:'keyboard.fasta',mimeType:'text/plain',buffer:Buffer.from('>KeyboardImport\nAACCGGTT\n')});
   await page.locator('#impApply').waitFor();await page.locator('#impApply').click();await settled(page);
   assert.equal(await page.evaluate(()=>PhotonEditorBridgeHost.working().seq),'AACCGGTT');

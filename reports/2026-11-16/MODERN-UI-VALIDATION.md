@@ -10,7 +10,8 @@ existing application rather than replacing the editor or expanding biology featu
 - Responsive two-column desktop workspace; stacked phone panels and horizontal
   navigation. Phone dropdowns stay inside the viewport and below the measured toolbar.
 - Dark/light themes, visible keyboard focus, keyboard-operable file controls and
-  reduced-motion behavior. Icon actions retain accessible labels and original handlers.
+  reduced-motion behavior. Icon actions retain accessible labels and original handlers. The destructive
+  Reset action keeps its visible text label instead of resembling Undo.
 - Redesigned investor guide with explicit scope and a keyboard-operable collapse
   control. Existing sample/edit/undo/commit/export callbacks remain in place.
 - Real status distinguishes saved-local baseline, unapplied text, uncommitted
@@ -28,6 +29,9 @@ Linux, Node 24.22.1, Chromium / Playwright 1.56.1:
 
 - `npm test`: **280 passed**, zero failures/skips.
 - `node --test browser/*.test.mjs`: **96 passed**, zero failures/skips; 162.6 s.
+- Eight investor/UX cases passed again after the final labeled-Reset refinement.
+  Keyboard-import automation waits for storage to settle and focuses the target
+  atomically with its key press, without timing sleeps.
 - Five new real-browser cases cover decorated navigation/data preservation,
   actual save/draft/failure status, phone fit and guide collapse without writes,
   primary-action contrast in both themes/reduced motion, and keyboard file import.
