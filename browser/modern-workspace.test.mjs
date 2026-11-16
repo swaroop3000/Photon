@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {createExampleProject} from './project-ui-helpers.mjs';
 import {settled,faultProjectWrites} from './storage-helpers.mjs';
 const APP_URL='http://127.0.0.1:8765/';
-async function visit(page){await page.goto(APP_URL+'?demo=investor',{waitUntil:'networkidle'});await settled(page);}
-async function sample(page){await page.locator('#photonInvestorStart').click();await settled(page);}
+async function visit(page){await page.goto(APP_URL,{waitUntil:'networkidle'});await settled(page);}
+async function sample(page){await createExampleProject(page);}
 test('workspace sidebar remains usable across real history navigation and retains original data',async()=>{
  const browser=await chromium.launch();try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await visit(page);await sample(page);
@@ -33,22 +34,13 @@ test('save indicator distinguishes unapplied text, committed baseline, applied c
   assert.equal(await page.evaluate(()=>PhotonEditorBridgeHost.working().seq),original+'A');
  }finally{await browser.close();}
 });
-test('phone layout fits the viewport and guide collapse is keyboard usable without saving project data',async()=>{
+test('phone workspace and menus fit the viewport without changing the design',async()=>{
  const browser=await chromium.launch();try{
   const page=await browser.newPage({viewport:{width:390,height:844}});await visit(page);await sample(page);
-  const before=await page.evaluate(()=>PhotonProjects.readSnapshot());
+  const before=await page.evaluate(()=>structuredClone(W()));
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  const toggle=page.locator('#photonGuideToggle');await toggle.focus();await page.keyboard.press('Enter');
-  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
-  assert.equal(await page.locator('#photonInvestorEdit').isVisible(),false);
-  assert.deepEqual(await page.evaluate(()=>PhotonProjects.readSnapshot()),before);
-  await page.keyboard.press('Enter');assert.equal(await toggle.getAttribute('aria-expanded'),'true');
-  await page.locator('#photonInvestorEdit').click();await settled(page);
-  assert.equal(await page.locator('#photonWorkspaceStatus').innerText(),'Uncommitted changes');
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.locator('#photonInvestorMode').click();await page.locator('#expBtn').click();
-  const menu=await page.locator('#expDD').boundingBox();assert.ok(menu.x>=0&&menu.x+menu.width<=390);
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#expBtn').click();const menu=await page.locator('#expDD').boundingBox();assert.ok(menu.x>=0&&menu.x+menu.width<=390);
+  assert.deepEqual(await page.evaluate(()=>structuredClone(W())),before);
  }finally{await browser.close();}
 });
 test('dark/light primary actions retain readable contrast and reduced-motion preferences are honored',async()=>{

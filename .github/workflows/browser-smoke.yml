@@ -22,6 +22,8 @@ jobs:
           node-version: '22'
       - name: Install Playwright
         run: npm install --no-save playwright@1.56.1
+      - name: Build the complete application package
+        run: npm run build
       - name: Start Photon static server
         run: python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/photon-server.log 2>&1 &
       - name: Run browser smoke tests

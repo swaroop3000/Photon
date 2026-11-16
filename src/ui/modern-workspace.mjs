@@ -48,8 +48,7 @@ function iconAction(node,name){
  node.classList.add('photon-icon-action');node.prepend(icon(name,'photon-action-icon'));
 }
 function decorateToolbar(){
- // Keep the destructive Reset action text-labeled rather than resembling Undo.
- for(const [id,name] of [['cpBtn','copy'],['dlBtn','download'],['helpBtn','help'],['photonBackup','download'],['photonRecoveryCenter','commits']])iconAction(document.getElementById(id),name);
+ for(const [id,name] of [['cpBtn','copy'],['helpBtn','help'],['photonBackup','download'],['photonRecoveryCenter','commits']])iconAction(document.getElementById(id),name);
  iconAction(document.getElementById('photonRestoreInput')?.closest('label'),'upload');
  for(const label of document.querySelectorAll('.topbar label.btn'))if(!label.dataset.photonFileButton){
   const input=label.querySelector('input[type=file]')??document.getElementById(label.htmlFor);
@@ -80,18 +79,8 @@ function decorateView(){
  for(const name of document.querySelectorAll('.frow .fname'))if(!name.title)name.title=name.textContent;
  refreshStatus();
 }
-function decorateGuide(){
- const panel=document.getElementById('photonInvestorPanel');if(!panel||panel.querySelector('.photon-demo-intro'))return;
- const intro=document.createElement('div');intro.className='photon-demo-intro';
- for(const child of [...panel.children].slice(0,3))intro.append(child);
- const workflow=document.createElement('div');workflow.className='photon-demo-workflow';workflow.id='photonDemoWorkflow';
- for(const child of [...panel.children])workflow.append(child);
- const toggle=document.createElement('button');toggle.id='photonGuideToggle';toggle.type='button';toggle.textContent='Hide guide';toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-controls',workflow.id);
- toggle.onclick=()=>{const collapsed=panel.classList.toggle('photon-guide-collapsed');toggle.textContent=collapsed?'Show guide':'Hide guide';toggle.setAttribute('aria-expanded',String(!collapsed));};
- panel.append(intro,workflow,toggle);
-}
 document.body.classList.add('photon-modern');
-decorateNav();decorateToolbar();decorateGuide();decorateView();
+decorateNav();decorateToolbar();decorateView();
 new MutationObserver(decorateNav).observe(document.getElementById('nav'),{childList:true});
 new MutationObserver(()=>{decorateToolbar();refreshStatus();}).observe(document.querySelector('.topbar'),{childList:true,subtree:true,characterData:true});
 new MutationObserver(decorateView).observe(document.getElementById('view'),{childList:true});

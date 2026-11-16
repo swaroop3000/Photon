@@ -37,7 +37,8 @@ const modules=[
   'backbone-library-tools.mjs',
   'construct-qc-tools.mjs',
   'translation-explorer-tools.mjs',
-  'investor-demo-tools.mjs',
+  'project-tools.mjs',
+  'application-download.mjs',
   'modern-workspace.mjs',
 ];
 for(const module of modules){
