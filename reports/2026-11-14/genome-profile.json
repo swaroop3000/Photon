@@ -1,0 +1,101 @@
+{
+  "schema": "photon-genome-profile-v1",
+  "runs": [
+    {
+      "schema": "photon-core-benchmark-v1",
+      "bases": 100000,
+      "node": "v24.22.1",
+      "platform": "linux",
+      "metrics": {
+        "normalize": {
+          "milliseconds": 1.741
+        },
+        "reverseComplement": {
+          "milliseconds": 7.866
+        },
+        "gcContent": {
+          "milliseconds": 4.006
+        },
+        "translate": {
+          "milliseconds": 3.038
+        },
+        "restrictionEcoRI": {
+          "milliseconds": 6.432
+        },
+        "motifSearch": {
+          "milliseconds": 9.615
+        }
+      },
+      "counts": {
+        "enzymeSites": 6250,
+        "motifHits": 6250,
+        "proteinResidues": 33333
+      },
+      "heapUsedMiB": 10.32
+    },
+    {
+      "schema": "photon-core-benchmark-v1",
+      "bases": 1000000,
+      "node": "v24.22.1",
+      "platform": "linux",
+      "metrics": {
+        "normalize": {
+          "milliseconds": 9.923
+        },
+        "reverseComplement": {
+          "milliseconds": 92.186
+        },
+        "gcContent": {
+          "milliseconds": 37.035
+        },
+        "translate": {
+          "milliseconds": 32.107
+        },
+        "restrictionEcoRI": {
+          "milliseconds": 89.017
+        },
+        "motifSearch": {
+          "milliseconds": 73.156
+        }
+      },
+      "counts": {
+        "enzymeSites": 62500,
+        "motifHits": 62500,
+        "proteinResidues": 333333
+      },
+      "heapUsedMiB": 71.35
+    },
+    {
+      "schema": "photon-core-benchmark-v1",
+      "bases": 10000000,
+      "node": "v24.22.1",
+      "platform": "linux",
+      "metrics": {
+        "normalize": {
+          "milliseconds": 116.404
+        },
+        "reverseComplement": {
+          "milliseconds": 812.439
+        },
+        "gcContent": {
+          "milliseconds": 247.85
+        },
+        "translate": {
+          "milliseconds": 382.744
+        },
+        "restrictionEcoRI": {
+          "milliseconds": 488.831
+        },
+        "motifSearch": {
+          "milliseconds": 715.376
+        }
+      },
+      "counts": {
+        "enzymeSites": 625000,
+        "motifHits": 625000,
+        "proteinResidues": 3333333
+      },
+      "heapUsedMiB": 396.57
+    }
+  ]
+}

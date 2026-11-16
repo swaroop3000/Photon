@@ -1,0 +1,14 @@
+{
+  "schema": "photon-compound-genbank-validation/1",
+  "biopython": "1.86",
+  "accession": "V00499.1",
+  "public_fixture_sha256": "372c9f8e630efdcb4900f498fe09d03e892dfd6b55528806ed56783f67b3dd7c",
+  "records": 51,
+  "synthetic_seed": 20261116,
+  "assertions": 1564,
+  "phases": [
+    "original",
+    "after explicit edits"
+  ],
+  "scope": "Exact ascending disjoint local joins, both strands, circular/linear molecules, spliced extraction and base-identity interval liftover. No fuzzy, remote, mixed-strand, non-monotonic joins or wet-lab/clinical claims."
+}

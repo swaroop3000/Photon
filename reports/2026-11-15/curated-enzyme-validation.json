@@ -1,0 +1,9 @@
+{
+  "schema": "photon-curated-enzyme-validation/1",
+  "biopython": "1.86",
+  "enzymes": 28,
+  "digest_vectors": 3118,
+  "assertions": 12358,
+  "seed": 3000,
+  "scope": "Exact ACGT linear/circular cut coordinates, both Type IIS orientations, origin rotations and top-strand fragment lengths. No ambiguous recognition sites, methylation, chemistry, ligation yield or laboratory validation."
+}

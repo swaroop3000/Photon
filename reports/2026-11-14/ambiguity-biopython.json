@@ -1,0 +1,14 @@
+{
+  "schema": "photon-biopython-validation-v1",
+  "biopython": "1.86",
+  "fixture_sha256": "f6f7fc301c31c12fea35ff2408a255b2e8f7acdfd3dc354e810197e0ceca1f92",
+  "seed": 3000,
+  "records": 2,
+  "enzymes": 7,
+  "assertions": 3669,
+  "ambiguity_pairs": 225,
+  "ambiguous_codons": 3375,
+  "mixed_residue_alias_codons": 15,
+  "amino_acid_policy": "Biopython B/Z/J become Photon X for mixed-residue outcomes",
+  "scope": "Synthetic supported-subset differential checks; no wet-lab validation"
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "photon-edit-benchmark-v1",
+  "node": "v24.22.1",
+  "bases": 1000000,
+  "edits": 100,
+  "sequentialMs": 972.789309,
+  "batchMs": 9.637567999999987,
+  "heapUsedMiB": 17.399330139160156,
+  "identical": true
+}

@@ -1,0 +1,85 @@
+name: SBOL3 pySBOL3 interoperability
+
+on:
+  pull_request:
+  push:
+    branches:
+      - feature/photon-1-core-engine
+
+permissions:
+  contents: read
+
+jobs:
+  sbol3-interop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent SBOL3 reader
+        run: python -m pip install 'sbol3>=1.2,<2'
+      - name: Generate RDF N-Triples from Photon
+        run: node tests/emit-sbol3-fixture.mjs > /tmp/photon-sbol3.nt
+      - name: Read Photon RDF with pySBOL3
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-sbol3.nt', encoding='utf-8') as f:
+              content = f.read()
+          doc.read_string(content, sbol3.NTRIPLES)
+          component = doc.find('https://photon.app/sbol3/ReferenceConstruct')
+          assert component is not None, "Missing SBOL3 Component"
+          assert len(component.sequences) == 1, "Missing linked DNA sequence"
+          assert len(component.features) == 2, "Missing feature annotations"
+          report = doc.validate()
+          print('pySBOL3 validation:', report)
+          assert len(report.errors) == 0, 'pySBOL3 reported validation errors'
+          print('pySBOL3 independently validated Component, sequence and two features')
+          PY
+      - name: Generate multi-component RDF graph
+        run: node tests/emit-sbol3-assembly.mjs > /tmp/photon-multipart.nt
+      - name: Independently validate SubComponent links and locations
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-multipart.nt', encoding='utf-8') as f:
+              doc.read_string(f.read(), sbol3.NTRIPLES)
+          circuit = doc.find('https://photon.app/sbol3/MultiPartCircuit')
+          assert circuit is not None, 'Missing parent assembly'
+          assert len(circuit.features) == 3, 'Missing linked subcomponents'
+          assert all(isinstance(part, sbol3.SubComponent) for part in circuit.features)
+          assert all(len(part.locations) == 1 for part in circuit.features)
+          assert len(circuit.sequences) == 1
+          for feature in circuit.features:
+              assert doc.find(feature.instance_of) is not None, 'Missing child component'
+          report = doc.validate()
+          print('Multi-component SBOL3 validation:', report)
+          assert len(report.errors) == 0, 'Invalid SubComponent graph'
+          PY
+      - name: Generate nested reusable component hierarchy RDF
+        run: node tests/emit-sbol3-hierarchy.mjs > /tmp/photon-hierarchy.nt
+      - name: Independently validate nested SBOL3 hierarchy
+        run: |
+          python - <<'PY'
+          import sbol3
+          doc = sbol3.Document()
+          with open('/tmp/photon-hierarchy.nt', encoding='utf-8') as f:
+              doc.read_string(f.read(), sbol3.NTRIPLES)
+          root = doc.find('https://photon.app/sbol3/circuit')
+          cassette = doc.find('https://photon.app/sbol3/cassette')
+          assert root is not None and cassette is not None
+          assert len(root.features) == 3
+          assert len(cassette.features) == 2
+          assert all(isinstance(p, sbol3.SubComponent) for p in root.features)
+          assert sum(p.instance_of=='https://photon.app/sbol3/cassette' for p in root.features)==2
+          report = doc.validate()
+          print('Nested hierarchy validation:',report)
+          assert len(report.errors)==0
+          PY

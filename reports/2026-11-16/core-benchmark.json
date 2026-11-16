@@ -1,0 +1,32 @@
+{
+  "schema": "photon-core-benchmark-v1",
+  "bases": 1000000,
+  "node": "v24.22.1",
+  "platform": "linux",
+  "metrics": {
+    "normalize": {
+      "milliseconds": 17.256
+    },
+    "reverseComplement": {
+      "milliseconds": 88.642
+    },
+    "gcContent": {
+      "milliseconds": 31.829
+    },
+    "translate": {
+      "milliseconds": 29.159
+    },
+    "restrictionEcoRI": {
+      "milliseconds": 59.159
+    },
+    "motifSearch": {
+      "milliseconds": 53.446
+    }
+  },
+  "counts": {
+    "enzymeSites": 62500,
+    "motifHits": 62500,
+    "proteinResidues": 333333
+  },
+  "heapUsedMiB": 70.62
+}
