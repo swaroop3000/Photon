@@ -4,6 +4,13 @@ Use the normal application root. There is one workspace, with no presentation
 mode, scripted edits or investor controls. The modern sidebar, responsive panels,
 themes and live save status are the product interface.
 
+## Tutorial
+
+Select the visible **Tutorial** button in the toolbar (or press `?` outside a
+text field). Six steps explain the workflow, tools and backups. Use the numbered
+topics, Back and Next; Escape or Close returns to your unchanged workspace,
+including unapplied sequence text. The guide never executes edits for you.
+
 ## Working workflow
 
 - **New project** creates an empty construct or accepts pasted DNA. **Use example**

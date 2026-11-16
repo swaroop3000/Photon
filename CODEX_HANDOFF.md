@@ -1,5 +1,22 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: discoverable product tutorial — November 16, 2026
+
+- Visible text-labeled Tutorial replaces the easy-to-miss question-mark icon.
+- Six read-only lessons explain projects/import, maps/features, Apply/Undo,
+  local commits/branches, tools and export/backups. Topic shortcuts, Back/Next,
+  Finish, Escape, focus containment/return and phone layout are supported.
+- Removed the old tour that navigated and rerendered workspace pages. The new
+  guide does not write storage or replace unapplied editor text or tool selection.
+- Local suites passed: 281 core and 101 browser tests, zero failures/skips;
+  static build, Wrangler dry run and built-site tutorial inspection passed.
+- Two new browser regressions cover every lesson and preservation, plus phone
+  bounds, keyboard focus and the ? shortcut. See the tutorial validation report.
+- The user promoted version ccc7aca5 (0556c86) to production; its HTML and real
+  create/edit/Undo/save/reload were independently verified afterward. This new
+  tutorial change goes to a separate preview; prior approval is not automatic
+  approval for future promotions. Main stays unchanged and PR #1 remains draft.
+
 ## Latest: normal product MVP — November 16, 2026
 
 The user's current instruction removes the earlier investor/presentation mode.

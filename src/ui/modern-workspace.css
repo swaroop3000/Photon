@@ -143,3 +143,17 @@ body.photon-modern{font-size:13px;letter-spacing:-.012em}
 
 #photonToast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:110;max-width:min(560px,calc(100vw - 32px));background:var(--ink);color:var(--panel);border-radius:10px;padding:12px 17px;box-shadow:0 8px 28px #0002;font-size:12px;line-height:1.6}
 #photonToast[hidden]{display:none}
+
+.photon-modern #helpBtn{border-color:var(--accent);color:var(--aink);font-weight:650}
+.tutorial-header,.tutorial-footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tutorial-eyebrow{font-size:10px;letter-spacing:.12em;color:var(--aink);font-weight:650}
+#tutorialProgress{margin:16px 0 8px;font-size:11px;color:var(--muted)}
+#tutorialTitle{font-size:24px;line-height:1.25;letter-spacing:-.025em;margin:0 0 10px}
+.tutorial-summary{color:var(--muted);line-height:1.6;margin:0 0 20px}
+.tutorial-lessons{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.tutorial-lessons li{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
+.tutorial-lessons p{margin:6px 0 0;line-height:1.65;color:var(--muted);font-size:13px}
+.tutorial-topics{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.tutorial-topics [aria-current="step"]{border-color:var(--accent);color:var(--aink);background:var(--aw)}
+.tutorial-footer{padding-top:14px;border-top:1px solid var(--line)}
+@media(max-width:760px){#tutorialTitle{font-size:21px}.tutorial-lessons li{padding:12px}}

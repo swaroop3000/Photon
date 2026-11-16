@@ -48,7 +48,7 @@ function iconAction(node,name){
  node.classList.add('photon-icon-action');node.prepend(icon(name,'photon-action-icon'));
 }
 function decorateToolbar(){
- for(const [id,name] of [['cpBtn','copy'],['helpBtn','help'],['photonBackup','download'],['photonRecoveryCenter','commits']])iconAction(document.getElementById(id),name);
+ for(const [id,name] of [['photonBackup','download'],['photonRecoveryCenter','commits']])iconAction(document.getElementById(id),name);
  iconAction(document.getElementById('photonRestoreInput')?.closest('label'),'upload');
  for(const label of document.querySelectorAll('.topbar label.btn'))if(!label.dataset.photonFileButton){
   const input=label.querySelector('input[type=file]')??document.getElementById(label.htmlFor);

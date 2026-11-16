@@ -38,6 +38,7 @@ const modules=[
   'construct-qc-tools.mjs',
   'translation-explorer-tools.mjs',
   'project-tools.mjs',
+  'tutorial-tools.mjs',
   'application-download.mjs',
   'modern-workspace.mjs',
 ];

@@ -17,6 +17,8 @@ and whole-genome unchecked items remain future work beyond this scoped MVP.
 - [x] Complete application ZIP with verified files and local HTTP launch instructions;
   independent ZIP extraction and offline browser editing/persistence regressions.
 - [x] Accessible visible feedback for application download/operation errors.
+- [x] Visible Tutorial button and six-step product guide, keyboard/phone support;
+  reading/navigating the guide preserves drafts, project data and current tools.
 - [ ] User review of the normal hosted workspace and its supported MVP scope.
 
 ## 1. Sequence editing
