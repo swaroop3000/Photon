@@ -2,6 +2,20 @@
 
 This is a **review checklist**, not a release approval. The Genome Compiler feature-comparison target remains open.
 
+## Immediate product priority — investor MVP
+
+Freeze new advanced roadmap work for the immediate investor presentation. The
+MVP is the existing tested core plus a focused synthetic walkthrough: GenBank
+import, annotated map, actual edit/undo, local commit/history and export. See
+`INVESTOR-DEMO.md`. Broader unchecked items below remain future product/release
+work, not automatic blockers for a truthful synthetic investor demonstration.
+
+- [x] Optional presentation mode with explicit core/experimental scope, real
+  sample import into a separate project, actual edit/undo/commit/export controls.
+- [x] Preserve existing projects, failed-save rollback and unapplied text across
+  presentation toggles; browser regression coverage.
+- [ ] Founder rehearsal and review of a shareable hosted preview if needed.
+
 ## 1. Sequence editing
 - [x] Isolated DNA core; editor adapter uses zero-based, half-open coordinates.
 - [x] Explicit atomic mixed indel/substitution batches; browser bridge creates one undo snapshot.

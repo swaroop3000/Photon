@@ -720,6 +720,16 @@ window.PhotonInitializeStorage=async(store,makeCommands)=>{
  flash=function(message){if(projectCommands.busy){messagePending=message;return;}flashNow(message);};
  window.PhotonProjects={whenIdle:()=>projectCommands.whenIdle(),readSnapshot:()=>store.readSnapshot(),snapshotEntries:()=>store.snapshotEntries(),get status(){return {...store.status,busy:projectCommands.busy};}};
  window.PhotonLibraryStorage={getItem:key=>store.getLibrary(key),setItem:(key,raw)=>projectCommands.saveLibrary(key,raw)};
+ window.PhotonPresentationHost={
+  isSample:()=>repo().presentationSample==='photon/investor-project/1',
+  showCore:()=>{if(DB.tab!=='code'){DB.tab='code';U.tool='features';render();}else if(!['features','analyze'].includes(U.tool)){U.tool='features';renderTool();}},
+  async createSample(working){
+   if(projectCommands.busy)throw new Error('Another action is saving; retry after it finishes.');
+   const next=structuredClone(DB),rid=uid(),cid=uid(),time=Date.now(),snapshot=structuredClone(working);
+   next.repos[rid]={id:rid,name:'Photon investor sample',desc:'Synthetic presentation project; biological activity not validated.',presentationSample:'photon/investor-project/1',stars:0,created:time,branch:'main',protected:false,branches:{main:{head:cid}},commits:{[cid]:{id:cid,parents:[],branch:'main',msg:'Import synthetic sample',author:'you',time,snap:structuredClone(snapshot)}},working:snapshot,tags:[],pulls:[],issues:[],wiki:[{title:'Home',body:'Synthetic investor demonstration. Browser-local project history, not remote Git hosting.'}]};
+   next.cur=rid;next.tab='code';await projectCommands.save(next);DB=next;U.sel=-1;U.tool='features';render();return rid;
+  }
+ };
  window.PhotonRecoveryHost.snapshotEntries=()=>store.snapshotEntries();
  window.PhotonRecoveryHost.readSnapshot=()=>store.readSnapshot();
  window.PhotonRecoveryHost.migrationSource=()=>store.migrationSource();
@@ -730,7 +740,7 @@ window.PhotonInitializeStorage=async(store,makeCommands)=>{
  };
  window.PhotonRecoveryHost.migrateDefaults=data=>{Object.values(data.repos).forEach(migrate);return data;};
  document.body.inert=false;
- if(!store.status.issue){try{if(!localStorage.getItem('locusSeenTut')){localStorage.setItem('locusSeenTut','1');setTimeout(openTutorial,400);}}catch(e){}}
+ if(!store.status.issue){try{if(new URLSearchParams(location.search).get('demo')!=='investor'&&!localStorage.getItem('locusSeenTut')){localStorage.setItem('locusSeenTut','1');setTimeout(openTutorial,400);}}catch(e){}}
 };
 window.PhotonProjectReady=import('./src/ui/bootstrap.mjs').catch(error=>{
  projectStorage=undefined;document.body.inert=false;

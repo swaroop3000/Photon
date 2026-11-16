@@ -1,5 +1,27 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Immediate goal change: investor MVP — November 16, 2026
+
+The user needs a minimal viable product for investors, not completion of the full
+engineering roadmap before presentation. Pause advanced additions. The focused
+workflow is import → map → edit → undo → commit/history → export, using synthetic
+data. See `INVESTOR-DEMO.md` for the three-minute script and scoped acceptance.
+
+- `?demo=investor` / **Investor demo** opts into a clearly labeled presentation
+  view. Experimental pages/tools are outside the focused view; exit restores them.
+- **Start new sample** uses real GenBank parsing and adds a separate project through
+  the existing asynchronous command/storage path. Existing projects stay intact.
+- The example edit is an actual one-base spacer substitution with real full-
+  construct undo. Commit/history/export use existing application operations.
+  This is local browser history, not remote GitHub collaboration.
+- Local verification: 280 core tests and 91 Chromium cases passed; static build,
+  71-asset Wrangler dry run and built-site investor rehearsal passed. New tests
+  cover real end-to-end behavior, reload, exported file content, failed saves and
+  preserving unapplied text on view toggles. See
+  `reports/2026-11-16/INVESTOR-MVP-VALIDATION.md`.
+- Keep PR #1 draft, main/production protected. Founder rehearsal and a verified
+  preview URL are next; broader scientific/release gates still apply to broader use.
+
 ## Latest: exact local compound exon milestone — November 16, 2026
 
 - Continues `dc57660`. Exact ascending local `join` ranges retain authoritative

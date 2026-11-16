@@ -4,6 +4,16 @@ Keep `feature/photon-1-core-engine` and PR #1 in draft until an explicitly scope
 alpha candidate is reviewed. Main and production promotion remain protected by
 separate user approval. A successful build is not merge or publication approval.
 
+## Immediate goal: investor demonstration
+
+The user has narrowed the immediate goal to an investor MVP. Use
+`INVESTOR-DEMO.md` and the opt-in `?demo=investor` view for a synthetic, desktop-
+browser demonstration of import/map/edit/undo/commit/export. Completing the entire
+scientific/Genome Compiler roadmap is not required to present that working core.
+Demo acceptance, founder rehearsal and a verified preview link are separate from
+broad scientific-use or production-release acceptance. Existing merge/production
+approval requirements remain in force; this scope change does not authorize either.
+
 ## Evidence already available
 
 - [x] Main project save failures roll back, do not report success, and preserve
