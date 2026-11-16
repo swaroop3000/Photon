@@ -2,20 +2,22 @@
 
 This is a **review checklist**, not a release approval. The Genome Compiler feature-comparison target remains open.
 
-## Immediate product priority — investor MVP
+## Immediate product priority — normal workspace MVP
 
-Freeze new advanced roadmap work for the immediate investor presentation. The
-MVP is the existing tested core plus a focused synthetic walkthrough: GenBank
-import, annotated map, actual edit/undo, local commit/history and export. See
-`INVESTOR-DEMO.md`. Broader unchecked items below remain future product/release
-work, not automatic blockers for a truthful synthetic investor demonstration.
+The product is the normal application described in `MVP.md`. No separate
+presentation mode or scripted investor controls are included. Broader scientific
+and whole-genome unchecked items remain future work beyond this scoped MVP.
 
-- [x] Optional presentation mode with explicit core/experimental scope, real
-  sample import into a separate project, actual edit/undo/commit/export controls.
-- [x] Preserve existing projects, failed-save rollback and unapplied text across
-  presentation toggles; browser regression coverage.
-- [x] Modern workspace shell, responsive desktop/phone layout, dark/light styling, keyboard file controls and collapsible investor guide. Actual save/draft/failure status; no fake team/remote indicators. Five new browser regressions and synthetic screenshots document scope.
-- [ ] Founder rehearsal and review of a shareable hosted preview if needed.
+- [x] Modern normal workspace, responsive desktop/phone layout, themes, keyboard
+  file controls and actual local save/draft/failure status.
+- [x] Remove investor-mode modules and mock Labs/Remote/Actions/collaborator pages;
+  exclude unvalidated legacy Gateway. Preserve working tools and local history.
+- [x] Replace broken Reset with transaction-safe New project; preserve existing
+  projects on success, cancellation and failed saves. Support blank/pasted DNA.
+- [x] Complete application ZIP with verified files and local HTTP launch instructions;
+  independent ZIP extraction and offline browser editing/persistence regressions.
+- [x] Accessible visible feedback for application download/operation errors.
+- [ ] User review of the normal hosted workspace and its supported MVP scope.
 
 ## 1. Sequence editing
 - [x] Isolated DNA core; editor adapter uses zero-based, half-open coordinates.

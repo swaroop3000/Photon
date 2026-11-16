@@ -10,7 +10,7 @@ The Photon browser client is a static HTML + ES module application; it must be s
 4. Check that `dist/index.html`, `dist/src/ui/editor-bridge.mjs` and `dist/src/core/dna.mjs` exist.
 5. To inspect locally, run `cd dist && python -m http.server 8765`.
 
-The build copies **only** the site and browser modules; it excludes Git metadata, test fixtures, reports and source build scripts. `dist/` is ignored by Git.
+The build copies **only** the site and browser modules, and generates START.txt plus a SHA-256 application manifest; it excludes Git metadata, test fixtures, reports and source build scripts. `dist/` is ignored by Git.
 
 ## Cloudflare Workers Builds
 
@@ -47,3 +47,13 @@ the hosted deployment checklist item.
 ## Data safety
 
 Photon stores active projects and libraries in revisioned IndexedDB, retaining legacy localStorage source bytes during migration (see `STORAGE.md`). It is not a clinical record system, a remote git service, or a durable backup. Export Photon JSON bundles before clearing site data, switching origins or importing large collections. Keep sensitive/clinical data out of the demo.
+
+## Complete application download
+
+The normal workspace's Download app action fetches the build manifest and verifies
+each packaged file's size and SHA-256 before creating a ZIP. A changed/missing file
+fails visibly. The ZIP includes index.html, src/, START.txt and its manifest; it
+never includes browser projects, libraries, Git metadata or test reports. Extract
+all files and use a local HTTP server as described in START.txt. Download app is
+not a project backup. On the source development server, run `npm run build` first;
+the action uses dist/ there.

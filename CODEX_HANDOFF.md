@@ -1,43 +1,29 @@
 # Photon — Codex handoff (November 14, 2026)
 
-## Latest: modern workspace UI/UX — November 16, 2026
+## Latest: normal product MVP — November 16, 2026
 
-- Continues `452571b`. New `modern-workspace.css` / `modern-workspace.mjs` provide
-  a charcoal sidebar, compact labeled toolbar utilities, consistent teal cards/type,
-  responsive workspace panels/menus and an improved collapsible investor guide.
-- The existing DOM IDs, editor/data handlers and full application remain in use.
-  File controls gain keyboard activation; icons retain accessible labels. Status
-  is derived from actual project/draft/storage state, including failed saves.
-- Local verification: 280 core and 96 Chromium tests passed, zero failures/skips.
-  Static build, 73-asset Wrangler dry run and built-site investor workflow passed.
-  Five new cases cover real navigation, status failures, responsive bounds and
-  guide state, theme contrast/reduced motion and keyboard file import. Actual
-  light/dark/phone screenshots use only synthetic samples.
-- See `reports/2026-11-16/MODERN-UI-VALIDATION.md` and `ui/README.md` alongside it.
-  This is a UI milestone within the investor MVP, not broader biology expansion.
-  Keep PR #1 draft, main and production protected; founder rehearsal remains next.
+The user's current instruction removes the earlier investor/presentation mode.
+Use the normal root URL and `MVP.md`; earlier presentation screenshots/reports
+are historical and are superseded by the normal-workspace validation report.
 
-## Immediate goal change: investor MVP — November 16, 2026
-
-The user needs a minimal viable product for investors, not completion of the full
-engineering roadmap before presentation. Pause advanced additions. The focused
-workflow is import → map → edit → undo → commit/history → export, using synthetic
-data. See `INVESTOR-DEMO.md` for the three-minute script and scoped acceptance.
-
-- `?demo=investor` / **Investor demo** opts into a clearly labeled presentation
-  view. Experimental pages/tools are outside the focused view; exit restores them.
-- **Start new sample** uses real GenBank parsing and adds a separate project through
-  the existing asynchronous command/storage path. Existing projects stay intact.
-- The example edit is an actual one-base spacer substitution with real full-
-  construct undo. Commit/history/export use existing application operations.
-  This is local browser history, not remote GitHub collaboration.
-- Local verification: 280 core tests and 91 Chromium cases passed; static build,
-  71-asset Wrangler dry run and built-site investor rehearsal passed. New tests
-  cover real end-to-end behavior, reload, exported file content, failed saves and
-  preserving unapplied text on view toggles. See
-  `reports/2026-11-16/INVESTOR-MVP-VALIDATION.md`.
-- Keep PR #1 draft, main/production protected. Founder rehearsal and a verified
-  preview URL are next; broader scientific/release gates still apply to broader use.
+- Removed presentation modules, controls and scripted edit flow. Kept the modern
+  normal UI and real tools; removed mock Labs/Remote/Actions/settings additions
+  and the unvalidated legacy Gateway path.
+- Replaced the broken asynchronous Reset with New project, preserving existing
+  projects and saving through transactional IndexedDB commands. Blank/pasted DNA
+  and an optional annotated synthetic example are supported.
+- Replaced incomplete HTML-only Save app/Copy code with a complete application
+  ZIP, checked file sizes/SHA-256, standard CRC ZIP and extraction/start instructions.
+  Project data is excluded and backed up separately. Visible accessible feedback
+  replaces document-title-only errors. Command palette matches the current actions.
+- New regressions cover normal lifecycle/edit/undo/commit/export/reload, quota
+  failure, cancellation, blank projects, removed placeholders and independently
+  extracted application behavior. See `reports/2026-11-16/PRODUCT-MVP-VALIDATION.md`.
+- Local verification: 281 core tests and 99 Chromium cases passed, zero failures/skips;
+  complete-package extraction/offline checks, static build, Wrangler dry run and
+  four Biopython reference suites passed.
+- Keep PR #1 draft, main unchanged and production unpromoted. Remaining broader
+  scientific/storage/security review gates stay open; this is the scoped MVP.
 
 ## Latest: exact local compound exon milestone — November 16, 2026
 
