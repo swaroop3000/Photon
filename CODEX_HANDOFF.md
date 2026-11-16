@@ -1,5 +1,26 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: modern product refresh and startup hardening — November 16, 2026
+
+- Actual fresh production/previous-preview inspection showed the modern sidebar
+  without page errors. Production was still the older tutorial artifact. The
+  user's persistent old-style view was not reproduced in the fresh browser.
+- Removed a fragile late-activation path: photon-modern is now in the initial
+  body HTML and modern-workspace loads before project storage and optional modules.
+  A stalled draft module can no longer delay the styled shell/navigation.
+- New indigo light/dark palette, DNA brand icon, sidebar Projects shortcut,
+  clearer Design navigation/header and refreshed cards, forms, maps and controls.
+  Existing data/editor/tool handlers and all seven MVP improvements remain.
+- Static builds select a CSS content-hash query URL; the portable manifest retains
+  normal asset paths. This ties each entrypoint to its stylesheet revision.
+- Three new browser cases cover no-JS styling/stalled optional loading, exact
+  project preservation/responsive cards, and built CSS hash/portable paths.
+- Local checks passed: 283 core and 115 Chromium tests, zero failures/skips;
+  build, full package/offline extraction and Wrangler dry run passed.
+- Evidence and synthetic screenshots: reports/2026-11-16/MODERN-REFRESH-VALIDATION.md
+  and modern-refresh/. Keep PR #1 draft, main unchanged and preview separate from
+  production promotion. No new scientific claims or project migration.
+
 ## Latest: seven MVP workflow improvements — November 16, 2026
 
 - Projects opens a recent-design dashboard with topology-aware annotation previews

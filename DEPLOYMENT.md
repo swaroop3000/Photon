@@ -57,3 +57,13 @@ never includes browser projects, libraries, Git metadata or test reports. Extrac
 all files and use a local HTTP server as described in START.txt. Download app is
 not a project backup. On the source development server, run `npm run build` first;
 the action uses dist/ there.
+
+## UI revisions
+
+The generated entrypoint uses modern-workspace.css?v=<CSS-content-hash>, tying
+each build to its stylesheet revision. The manifest/ZIP retain normal on-disk
+asset paths; ordinary HTTP servers ignore the query when locating the CSS file.
+The modern shell class is present in HTML and its navigation initializes before
+project storage/optional modules. A successful preview still requires promotion
+of that exact version; promoting an older retained version restores its old UI.
+Do not clear browser site data to troubleshoot styling: it contains local projects.

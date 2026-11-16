@@ -31,6 +31,9 @@ and whole-genome unchecked items remain future work beyond this scoped MVP.
 - [x] Named versions use existing commit tags; duplicates/dirty naming rejected,
   tagged revisions protected from amend, failed-save rollback covered.
 - [x] Searchable contextual help for all seven editor tools and tutorial workflows.
+- [x] Refresh the normal product styling; apply the shell before JavaScript/storage,
+  initialize navigation before optional modules, and fingerprint built CSS URLs.
+  Cover stalled startup, exact project preservation and portable styles in browser regressions.
 - [ ] User review of the normal hosted workspace and its supported MVP scope.
 
 ## 1. Sequence editing
