@@ -39,6 +39,12 @@ const modules=[
   'translation-explorer-tools.mjs',
   'project-tools.mjs',
   'tutorial-tools.mjs',
+  'draft-tools.mjs',
+  'dashboard-tools.mjs',
+  'mvp-tools.mjs',
+  'drop-import-tools.mjs',
+  'mvp-tools.mjs',
+  'drop-import-tools.mjs',
   'application-download.mjs',
   'modern-workspace.mjs',
 ];
