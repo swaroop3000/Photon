@@ -19,6 +19,18 @@ and whole-genome unchecked items remain future work beyond this scoped MVP.
 - [x] Accessible visible feedback for application download/operation errors.
 - [x] Visible Tutorial button and six-step product guide, keyboard/phone support;
   reading/navigating the guide preserves drafts, project data and current tools.
+- [x] Recent-project dashboard with annotation previews, updated-time ordering and
+  name/description/annotation search; existing constructs remain intact.
+- [x] Debounced text-draft recovery in a separate revision-checked IndexedDB store;
+  explicit Restore, stale-revision refusal, browser restart and quota regressions.
+- [x] Reviewed drag-and-drop import through the existing validation path.
+- [x] Printable standalone HTML / JSON design reports with coordinate map,
+  annotations, revision details and sequence hash; inert escaped content.
+- [x] Surface engine affected-annotation flags, require explicit acknowledgement,
+  reject stale reviews and distinguish review from biological validation.
+- [x] Named versions use existing commit tags; duplicates/dirty naming rejected,
+  tagged revisions protected from amend, failed-save rollback covered.
+- [x] Searchable contextual help for all seven editor tools and tutorial workflows.
 - [ ] User review of the normal hosted workspace and its supported MVP scope.
 
 ## 1. Sequence editing

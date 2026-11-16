@@ -1,5 +1,32 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: seven MVP workflow improvements — November 16, 2026
+
+- Projects opens a recent-design dashboard with topology-aware annotation previews
+  and name/description/annotation search, backed by existing local projects.
+- Unapplied text autosaves separately in photon-editor-drafts, with unique revision
+  CAS and a full construct/HEAD fingerprint. Restore changes text only; stale
+  drafts are downloadable and cannot replace a different revision. Quota failure
+  retains in-tab text recovery and warns before closing. Project backups exclude
+  these drafts: apply or separately download them before changing origins.
+- Drag-and-drop accepts one <=32 MB file and delegates to the existing reviewed
+  import path. No project changes occur just from dropping a sequence file.
+- Export → Design report offers standalone printable HTML and JSON, including
+  map, supported annotation metadata, HEAD/branch/version labels and sequence
+  SHA-256. Full sequence/history/drafts are excluded; it is not a project backup.
+- Engine affected flags now appear in the review shelf/inspector. A checked review
+  acknowledgement removes an edit warning through transactional saves and refuses
+  stale constructs; this is not laboratory/biological validation.
+- Commits → Named versions persists existing tag records. Reject duplicate names
+  and dirty naming; prohibit amending any tagged HEAD to preserve its snapshot.
+- Tutorial → Search help and Tool help cover all seven editor tools, their inputs,
+  outputs and limitations. Help is read-only.
+- Local verification: 283 core and 112 browser tests passed (zero failures/skips),
+  static build and Wrangler dry run passed, 1 Mb diagnostics completed.
+- See MVP-WORKFLOW-VALIDATION.md in reports/2026-11-16 for scoped evidence and
+  STORAGE.md for draft limitations. Main stays unchanged; PR #1 stays draft.
+  New builds are preview-only until separately promoted by the user.
+
 ## Latest: discoverable product tutorial — November 16, 2026
 
 - Visible text-labeled Tutorial replaces the easy-to-miss question-mark icon.

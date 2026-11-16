@@ -172,3 +172,22 @@ also refuse unsupported compound locations. GenBank writes the exact supported j
 No automatic downgrade to software without compound support is implemented. This
 is a feature-branch compatibility change requiring release/cutover review before
 main merge or production promotion, not a production migration performed here.
+
+## Unapplied editor text drafts
+
+The independent photon-editor-drafts IndexedDB database holds one current text
+draft per project/branch, with a unique revision token for transactional CAS and
+a SHA-256 fingerprint of the full construct plus HEAD identity. It never writes
+active project DNA. Typing is debounced by 350 ms; pending/failed writes warn on
+normal page close, but a crash before persistence can lose the latest keystrokes.
+
+After restart, Restore draft changes the editor text only; review and Apply are
+separate. A draft from another construct/revision can be downloaded or discarded
+but cannot be restored over the current editor. Conflicting writers, invalid
+records and storage failures fail visibly without clearing old data. Failed text
+remains downloadable in the current tab; export it before closing. The 10 million
+character input cap is a guard, not a whole-genome performance claim.
+
+Drafts are not included in project or library backups, migration source or recovery
+archives. Apply or Download draft separately before clearing site data or changing
+origins. This is browser-local recovery, not remote backup or guaranteed durability.

@@ -41,3 +41,21 @@ ENGINEERING-REVIEW.md for the exact supported subsets and remaining work.
 
 Main and production stay protected. Preview success does not authorize a merge or
 production promotion; PR #1 remains draft until explicit review and approval.
+
+## Everyday workflow additions
+
+- **Projects** shows recently updated designs, searchable by project name,
+  description or annotation name. Cards show a topology-aware annotation preview.
+- Unapplied editor text saves automatically after a short pause. After reopening,
+  choose **Restore draft**, inspect it and **Apply**. Stale drafts are download-only.
+  Download failed drafts before closing; browser recovery is not an external backup.
+- Drop one file anywhere on the app to use the normal reviewed import flow.
+- **Export → Design report** downloads printable HTML or JSON with a coordinate
+  map, annotations, revision details and sequence hash. It excludes full sequence,
+  complete history and drafts; export sequence files/backups separately.
+- Edited annotations appear in the review shelf. Inspect or edit them, then
+  acknowledge review. Acknowledgement does not validate biological activity.
+- **Commits → Named versions** labels the current recorded revision, for example
+  Candidate A. Commit changes first. Named/tagged revisions cannot be amended.
+- **Tool help** searches guidance for the active tool. **Tutorial → Search help**
+  searches all tools and workflows. Both preserve the underlying workspace.
