@@ -1,0 +1,8 @@
+{
+  "accession": "V00499.1",
+  "retrieved_utc": "2026-11-16",
+  "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=V00499.1&rettype=gbwithparts&retmode=text",
+  "sha256": "372c9f8e630efdcb4900f498fe09d03e892dfd6b55528806ed56783f67b3dd7c",
+  "bytes": 12370,
+  "modified": false
+}

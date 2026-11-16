@@ -16,3 +16,12 @@ source annotations, so this is not full-record archival equivalence. Tests also
 cover 270 independently generated CDS vectors for tables 1/11, both strands,
 all 64 internal codons, alternative starts and codon offsets. It is one plasmid
 record, not a broad real-genome interoperability dataset or laboratory validation.
+
+`V00499.1.gb` is the unmodified public GenBank record for the human germ-line
+beta-globin gene, retrieved 2026-11-16. Its separate `V00499.1-manifest.json` pins
+source URL, byte count and SHA-256. It is a public reference sequence, not a user's
+sample. Original attribution/bibliography stay in the record. The new compound
+validator compares its seven non-source features, three CDS exon intervals,
+444-base extraction and annotated 147-aa peptide with Biopython, plus 50 seeded
+synthetic records before/after edits. Header/source archival preservation and
+clinical/disease interpretation are outside this check.

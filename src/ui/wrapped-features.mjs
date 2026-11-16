@@ -16,16 +16,18 @@ export function renderWrappedFeatures(){
  if(!map||!host)return;
  map.querySelector('#photonWrappedFeatures')?.remove();
  const w=host.working(),length=w.seq.length;
- if(w.topology!=='circular'||length===0)return;
+ if(length===0)return;
  const view=map.closest('.mapwrap')?.querySelector('.maptab.active')?.dataset.v==='linear'?'linear':'circular';
  const group=svg('g',{id:'photonWrappedFeatures'});
  w.features.forEach((feature,index)=>{
-   if(feature.start<=feature.end)return;
+   if(!feature.segments&&(feature.start<=feature.end||w.topology!=='circular'))return;
    const original=map.querySelector('.arc[data-f="'+index+'"]');
    if(!original)return;
+   if(feature.segments){original.setAttribute('visibility','hidden');map.querySelector('[data-feature-label="'+index+'"]')?.setAttribute('visibility','hidden');}
    try{
      const segments=featureMapSegments(feature,length,{view});
      original.setAttribute('visibility','hidden');
+     map.querySelector('[data-feature-label="'+index+'"]')?.setAttribute('visibility','hidden');
      const fill=original.getAttribute('fill')||'#64748b';
      const strand=feature.strand===-1?-1:1;
      for(const segment of segments){
@@ -37,12 +39,13 @@ export function renderWrappedFeatures(){
              inner:strand===-1?117:151,outer:strand===-1?132:166}),
              fill,'fill-opacity':0.86,class:'arc',
              'data-wrapped-feature':index},feature.name);
+       if(feature.segments)shape.dataset.compoundFeature=String(index);
        shape.style.cursor='pointer';
        shape.onclick=()=>original.dispatchEvent(new MouseEvent('click',{bubbles:true}));
        group.append(shape);
      }
    }catch(error){
-     original.removeAttribute('visibility');
+     if(!feature.segments)original.removeAttribute('visibility');
      console.warn('Photon wrap-feature render skipped:',error.message);
    }
  });

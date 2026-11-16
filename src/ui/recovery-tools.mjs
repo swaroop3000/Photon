@@ -1,6 +1,7 @@
 /** Local archives, reviewed atomic archive restore and persistent failed attempts. */
 import {createRecoveryVault} from '../core/recovery-vault.mjs';
 import {PRIMARY_PROJECT_KEY,createBrowserArchive,parseBrowserArchive,sha256} from '../core/project-archive.mjs';
+import {projectBackupFormat} from '../core/project-backup.mjs';
 import {validateProjectDatabase} from '../core/project-backup.mjs';
 import {reviewArchiveRestore} from '../core/archive-restore.mjs';
 const host=globalThis.PhotonRecoveryHost;
@@ -119,7 +120,7 @@ button.onclick=async()=>{
       host.download('photon-browser-archive.json',JSON.stringify(value,null,2));
      }else if(value.format==='photon/failed-project-save/1'&&typeof value.raw==='string'){
       host.download(value.kind==='original'?'photon-original-storage.json':value.kind==='library'?'photon-library-recovery.json':value.kind==='command'?'photon-command-recovery.json':'photon-unsaved-recovery.json',
-       value.kind!=='unsaved'?value.raw:'{"format":"photon/local-project-backup/1","data":'+value.raw+'}');
+       value.kind!=='unsaved'?value.raw:'{"format":"'+projectBackupFormat(value.raw)+'","data":'+value.raw+'}');
      }else throw new Error('Unsupported saved recovery format');
     }catch(error){status.textContent='Recovery download rejected: '+error.message;}
    });

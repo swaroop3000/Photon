@@ -52,6 +52,7 @@ export function findMotif(sequence,motif,{circular=false,bothStrands=false}={}){
 export function editSequence(sequence,features,{start,end,insert=''}){
   const s=normalizeDNA(sequence);assertInt(start,'start');assertInt(end,'end');if(start<0||end<start||end>s.length)throw new RangeError('Invalid edit interval');
   if(!Array.isArray(features))throw new TypeError('features must be an array');
+  if(features.some(f=>f&&Object.hasOwn(f,'segments')))throw new RangeError('Compound features require the legacy-coordinate compound edit adapter');
   const replacement=normalizeDNA(insert),delta=replacement.length-(end-start);
   const newFeatures=transformFeatures(features,s.length,{start,end,insert:replacement});
   return {sequence:s.slice(0,start)+replacement+s.slice(end),features:newFeatures,delta};
@@ -83,6 +84,7 @@ function transformFeatures(features,length,{start,end,insert:replacement}){
 export function editSequenceBatch(sequence,features,operations){
   const s=normalizeDNA(sequence);
   if(!Array.isArray(features))throw new TypeError('features must be an array');
+  if(features.some(f=>f&&Object.hasOwn(f,'segments')))throw new RangeError('Compound features require the legacy-coordinate compound edit adapter');
   if(!Array.isArray(operations)||!operations.length)throw new RangeError('At least one edit is required');
   const edits=operations.map(op=>{
     if(!op)throw new RangeError('Invalid edit interval');

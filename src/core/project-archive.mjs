@@ -2,6 +2,8 @@
  * Archives preserve source strings; they never switch or delete live storage.
  */
 import {validateProjectDatabase} from './project-backup.mjs';
+import {hasCompoundAnnotations} from './feature-capabilities.mjs';
+export const COMPOUND_ARCHIVE_FORMAT='photon/browser-storage-archive/2';
 export const BROWSER_ARCHIVE_FORMAT='photon/browser-storage-archive/1';
 export const PRIMARY_PROJECT_KEY='locusPro_v1';
 const prefixes=['photon.parts.2.7:','photon.backbones.3.1:'];
@@ -45,13 +47,14 @@ export async function createBrowserArchive(entries,{createdAt=new Date().toISOSt
  if(typeof createdAt!=='string'||!Number.isFinite(Date.parse(createdAt)))throw new RangeError('Invalid archive date');
  const normalized=checkEntries(entries);
  const hash=await sha256(JSON.stringify(normalized));
- return {format:BROWSER_ARCHIVE_FORMAT,createdAt,sha256:hash,entries:normalized};
+ const compound=normalized.some(e=>hasCompoundAnnotations(e.raw));
+ return {format:compound?COMPOUND_ARCHIVE_FORMAT:BROWSER_ARCHIVE_FORMAT,createdAt,sha256:hash,entries:normalized};
 }
 export async function parseBrowserArchive(text){
  if(typeof text!=='string'||new TextEncoder().encode(text).byteLength>64_000_000)
   throw new RangeError('Browser archive exceeds the 64 MB read limit');
  const value=JSON.parse(text);
- if(value?.format!==BROWSER_ARCHIVE_FORMAT||typeof value.createdAt!=='string'||
+ if(![BROWSER_ARCHIVE_FORMAT,COMPOUND_ARCHIVE_FORMAT].includes(value?.format)||typeof value.createdAt!=='string'||
     typeof value.sha256!=='string'||!/^[a-f0-9]{64}$/.test(value.sha256))
   throw new RangeError('Unsupported browser archive format');
  const checked=await createBrowserArchive(value.entries,{createdAt:value.createdAt});

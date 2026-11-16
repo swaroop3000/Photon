@@ -4,12 +4,14 @@
  */
 import { restrictionSites, TYPE_II_ENZYMES } from './restriction.mjs';
 import { normalizeDNA } from './dna.mjs';
+import {featureIntervals} from './feature-io.mjs';
 
 export function splitCircularFeature(feature,length) {
   if (!Number.isSafeInteger(length)||length<1) throw new RangeError('Length must be positive');
   if (!feature||!Number.isSafeInteger(feature.start)||!Number.isSafeInteger(feature.end)||
       feature.start<1||feature.start>length||feature.end<1||feature.end>length)
     throw new RangeError('Feature coordinates must be 1-based and inside the plasmid');
+  if(Object.hasOwn(feature,'segments'))return featureIntervals(feature,length,{circular:true});
   const {start,end}=feature;
   return start<=end ? [{start,end}] : [{start,end:length},{start:1,end}];
 }

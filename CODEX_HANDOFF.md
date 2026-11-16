@@ -1,5 +1,31 @@
 # Photon — Codex handoff (November 14, 2026)
 
+## Latest: exact local compound exon milestone — November 16, 2026
+
+- Continues `dc57660`. Exact ascending local `join` ranges retain authoritative
+  segments and an envelope, with an optional outer complement. Extract/translate
+  spliced sequence, display real exon geometry and bounded colors, preserve segment
+  metadata through edits/history, and reject erased/overlapping exons atomically.
+- Direct envelope editing and compound legacy codon optimization are disabled.
+  Mixed compound/wrapped edits remain refused; backbone insertion stays outside
+  the complete envelope. SBOL subsets and legacy native exports refuse new data.
+- Compound working/history/backbone data activates a monotonic v2 active-record
+  header; DB object-store schema remains v1. A pinned historical v1 backend is
+  actually tested refusing it without overwriting. Compound backup/archive/backbone
+  exports use v2 and new readers accept v1/v2; no reverse migration is implemented.
+- Public V00499.1 beta-globin plus 50 synthetic records pass 1,564 independent
+  Biopython assertions before/after edits, including a 444-base/147-aa spliced CDS.
+  Existing synthetic/pBR322/28-enzyme reference checks also pass.
+- Core suite: 277 passed; full Chromium suite: 88 passed, zero failures/skips.
+  Built-site smoke and 69-asset Wrangler dry run passed. Evidence is in
+  `reports/2026-11-16/COMPOUND-GENBANK-VALIDATION.md`; final remote checks belong to
+  the exact new head. New annotation-part budgets preserve large single-record
+  GenBank imports without applying collection-only sequence-size caps.
+- Remaining: fuzzy/remote/mixed/non-monotonic or complex origin-crossing grammar,
+  original headers/source retention, broader datasets and scientific review,
+  genome-scale virtualization/streaming, Gateway and release/cutover/rollback
+  acceptance. Keep PR #1 draft and main/production protected; no full parity claim.
+
 ## Latest: reviewed archive restore and final session verification — November 15, 2026
 
 - Continues `1666c41`. Recovery accepts bounded browser archive files through a

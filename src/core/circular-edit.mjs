@@ -11,6 +11,7 @@ export function applyCircularGapEdit(working,edit){
  if(working?.topology!=='circular')throw new RangeError('Circular topology required');
  const seq=normalizeDNA(working.seq),length=seq.length;
  if(!Array.isArray(working.features))throw new TypeError('Features must be an array');
+ if(working.features.some(f=>Object.hasOwn(f,'segments')))throw new RangeError('Editing mixed compound and origin-spanning annotations requires reannotation');
  const {start,end,insert=''}=edit??{};
  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end<start||end>length)
    throw new RangeError('Invalid edit interval');

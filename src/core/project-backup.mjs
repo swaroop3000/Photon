@@ -4,6 +4,9 @@
 import {validateFeature} from './feature-io.mjs';
 
 export const PROJECT_BACKUP_FORMAT = 'photon/local-project-backup/1';
+export const COMPOUND_BACKUP_FORMAT = 'photon/local-project-backup/2';
+import {hasCompoundAnnotations} from './feature-capabilities.mjs';
+export const projectBackupFormat=data=>hasCompoundAnnotations(data)?COMPOUND_BACKUP_FORMAT:PROJECT_BACKUP_FORMAT;
 export const MAX_BACKUP_BYTES = 20_000_000;
 const own = (o, key) => Object.hasOwn(o, key);
 const fail = path => { throw new RangeError('Invalid backup: ' + path); };
@@ -135,7 +138,7 @@ export function parseProjectBackup(text) {
   if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) fail('exceeds 20 MB limit');
   const payload = JSON.parse(text);
   object(payload, 'payload');
-  if (payload.format !== PROJECT_BACKUP_FORMAT) fail('unsupported format');
+  if (![PROJECT_BACKUP_FORMAT,COMPOUND_BACKUP_FORMAT].includes(payload.format)) fail('unsupported format');
   json(payload, 'payload');
   return validateProjectDatabase(payload.data);
 }

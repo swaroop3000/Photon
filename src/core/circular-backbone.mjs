@@ -40,7 +40,7 @@ export function circuitIntoCircularBackbone(library,rootID,working,{
    return structuredClone(f);
  });
  const shifted=old.map(f=>({
-   ...f,start:f.start>boundary?f.start+m:f.start,
+   ...f,...(f.segments?{segments:f.segments.map(p=>({start:p.start>boundary?p.start+m:p.start,end:p.end>boundary?p.end+m:p.end}))}:{}),start:f.start>boundary?f.start+m:f.start,
    end:f.end>boundary?f.end+m:f.end
  }));
  const inserted=circuit.features.map(f=>({

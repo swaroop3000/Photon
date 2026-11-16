@@ -23,6 +23,7 @@ export function serializePhotonSbol(working){
  const name=stringOrEmpty(working.name||'Photon');
  const entries=[];
  for(const f of working.features||[]){
+   if(Object.hasOwn(f,'segments'))throw new RangeError('Compound feature export is unsupported in this SBOL subset; use GenBank or a Photon archive');
    validateFeature(f,seq.length,{circular:working.topology==='circular'});
    const metadata=f.qualifiers??{};
    if(!metadata||typeof metadata!=='object'||Array.isArray(metadata))throw new RangeError('Invalid feature qualifiers');

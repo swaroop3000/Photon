@@ -8,18 +8,19 @@ Photon's strict GenBank import supports:
 - A single record with `LOCUS` length, `FEATURES`, and `ORIGIN`.
 - Linear and circular DNA, A/C/G/T sequence.
 - 1-based, inclusive single-base and continuous interval features.
-- A reverse strand via `complement(...)`.
+- A reverse strand via an outer `complement(...)`.
+- Exact local exon joins with 2–1,000 ascending, disjoint intervals: `join(a..b,c..d,...)`, optionally inside an outer complement. Single-base and adjacent exon parts are supported. The authoritative `segments` array stores 1-based inclusive ranges; `start/end` are its validated genomic envelope. Negative-strand extraction reverse-complements the complete concatenation, preserving biological exon order.
 - Circular-origin features via exactly two intervals `join(start..length,1..end)` (optionally wrapped in `complement`).
 - Quoted qualifiers such as `gene`, `product`, `note`, `label`, `locus_tag`, and other string qualifiers. Repeated values retain their per-key order as arrays of at least two strings; singleton values remain strings. Duplicate `/label` values are rejected because Photon has one display name. Wrapped prose joins with spaces; wrapped `translation` values join without whitespace. Literal quotes use INSDC doubled quotes (`""`).
-- Selected unquoted forms: `codon_start` (1–3), positive numeric `transl_table`, bracketed numeric `citation`, `rpt_type` (tandem/inverted/flanking/terminal/direct/dispersed/other), and `direction` (left/right/both). Numeric values are stored as strings.
+- Selected unquoted forms: `codon_start` (1–3), positive numeric `transl_table`, numeric exon/intron `number`, bracketed numeric `citation`, `rpt_type` (tandem/inverted/flanking/terminal/direct/dispersed/other), and `direction` (left/right/both). Numeric values are stored as strings.
 - Valueless flags: `pseudo`, `partial`, `ribosomal_slippage`, `trans_splicing`, `environmental_sample`, `metagenome_source`, `focus`, `germline`, `rearranged`, `transgenic`, `proviral`, `virion`, stored as `true`. Repeated flags are rejected.
 - The `source` feature is read for source structure and deliberately omitted from the construct annotation list.
 
 Photon rejects ambiguous or unrepresentable cases rather than silently changing meaning:
-- Fuzzy positions (`<`/`>`), remote features, `order(...)`, non-origin `join(...)`, and other compound/multi-exon structures.
+- Fuzzy positions (`<`/`>`), remote features, `order(...)`, nested/per-part complements, mixed strands, out-of-order/non-monotonic joins, overlapping exon parts and complex origin-crossing exon joins. The existing canonical two-arm origin-spanning model remains separate.
 - Unknown unquoted forms or valueless flags, duplicate labels/flags, extra complex qualifier syntax and unterminated quoted values. Unsupported SBOL exports explicitly reject arrays/flags instead of stringifying them.
 - Invalid sequence, incorrect declared length, and malformed annotations.
-- The single-record API rejects multiple LOCUS records. The collection API and reviewed browser import support multiple individually supported records (100 records, 1 Mb total, 500 kb per record, 20,000 features in the browser).
+- The single-record API rejects multiple LOCUS records. The collection API and reviewed browser import support multiple individually supported records (100 records, 1 Mb total, 500 kb per record, 20,000 features and 20,000 annotation intervals in the browser). Single-record GenBank import enforces the same annotation/interval budget without imposing the collection-only sequence-size cap; unbounded-size or whole-genome acceptance is not implied.
 
 Export writes the supported location/qualifier subset. It is not guaranteed to preserve all original GenBank headers, source metadata, quoted multiline formatting or remote feature relationships. Import is *atomic* in the file picker: rejected records leave the current construct unchanged. Imported GenBank annotations are not silently supplemented with auto-generated features.
 
@@ -38,6 +39,37 @@ record: 48 non-source annotations, its three CDS peptides and 270 CDS vectors
 cross-checked with Biopython 1.86 (475 assertions). See the fixture manifest for
 provenance. Diverse real genomes, full INSDC support and header/source preservation
 remain outstanding.
+
+`python scripts/validate-compound-genbank.py` adds the pinned public V00499.1
+beta-globin record (seven non-source features, three CDS exons, 444 coding bases,
+147 amino acids) and 50 synthetic linear/circular records. Biopython 1.86 checks
+locations, qualifiers, extraction and base-identity liftover before/after edits:
+1,564 assertions. This is sequence/annotation evidence, not clinical validation.
+
+### Compound editing and display policy
+
+Maps and bounded sequence windows render exon intervals, leaving unannotated
+introns uncolored. The inspector and CDS explorer extract joined sequence before
+translation; reports retain segment coordinates. Direct envelope coordinate edits
+and legacy codon optimization are disabled for compound features. Name, type and
+whole-feature strand may still be edited. Explicit DNA edits/free-text revisions
+use segment liftover; every exon follows the existing interbase interval policy.
+Intronic edits do not mark an exon affected solely because they lie inside its
+envelope. Exon edits are flagged for manual review. Zero-length or overlapping
+resulting exons reject the whole batch. No splicing/function prediction is implied.
+Mixed compound-plus-origin-spanning annotation edits remain refused; no-op text
+revisions preserve them. Circular backbone insertion remains outside the complete
+feature envelope and shifts all exon ranges together.
+
+Current SBOL subsets and unversioned native bundles cannot represent the new model
+safely and explicitly refuse compound export. Use GenBank for its supported subset,
+or project backups/browser archives for full project metadata. Compound project
+backups, browser archives and backbone libraries declare format version 2; ordinary
+exports stay version 1. Both versions are read by this build, with unchanged size
+limits. The active store uses a monotonic version-2 **record header** after compound
+data/history/backbones are saved; IndexedDB object-store schema remains version 1.
+The historical v1 backend at dc57660 rejects that header without overwriting data.
+No automatic downgrade/reverse migration is provided. See STORAGE.md.
 
 ## SBOL / Photon XML
 
@@ -150,7 +182,7 @@ Adjacent feature junctions are listed with local sequence context when contiguou
 
 The Builder includes a **Six-frame translation explorer** with an adjustable minimum complete-ORF length. It calculates amino-acid translations for forward `+1/+2/+3` and reverse-complement `-1/-2/-3` frames, maps each displayed codon back to **1-based inclusive coordinates on the original reference sequence**, and identifies candidate ORFs from **ATG** through the first in-frame **TAA/TAG/TGA** stop codon. Frame protein previews and codon lists are bounded to 500 translated codons; the UI lists the first 100 codons per frame. Candidate ORF reporting is capped at 250 entries, with a truncation indicator. The six-frame preview uses the **standard genetic code**, and candidate ORF discovery uses a linearized sequence even for circular constructs (it does *not* discover new unannotated ORFs crossing the origin).
 
-Annotated **CDS** features are analyzed separately in their declared strand orientation, including circular-origin annotations when supported by Photon's coordinate model. The report records translated protein, feature coordinates, start codon, peptide length, terminal stop, internal stop count, and heuristic flags for non-ATG starts, missing terminal stops, internal stops, or length not divisible by three. Invalid CDS coordinates and unsupported biological instructions are reported explicitly without a computed peptide. Reports include table, codon_start, annotated/coding lengths, supplied-peptide match and partial/mismatch flags. Legacy inspector, Analyze peptide/protein stats and codon optimization use the same checks; optimization is available only for forward, non-wrapped, complete-frame ATG CDS without a supplied-peptide mismatch, and uses full-construct undo/save acknowledgement.
+Annotated **CDS** features are analyzed separately in their declared strand orientation, including exact compound exon joins and circular-origin annotations supported by Photon's coordinate model. The report records translated protein, feature coordinates, start codon, peptide length, terminal stop, internal stop count, and heuristic flags for non-ATG starts, missing terminal stops, internal stops, or length not divisible by three. Invalid CDS coordinates and unsupported biological instructions are reported explicitly without a computed peptide. Reports include table, codon_start, annotated/coding lengths, supplied-peptide match and partial/mismatch flags. Legacy inspector, Analyze peptide/protein stats and codon optimization use the same checks; optimization is available only for forward, non-wrapped, complete-frame ATG CDS without a supplied-peptide mismatch, and uses full-construct undo/save acknowledgement.
 
 **Report and safety:** The versioned **`photon/translation/1`** JSON report can be downloaded after analysis, but export is refused when the working construct or repository/branch has changed. Results do not mutate DNA, annotations, or version history. The analysis does not establish real transcription, translational efficiency, splicing, unsupported genetic codes, actual translation initiation, regulatory activity, or protein function. An absence of heuristic flags does not establish a functional gene product.
 

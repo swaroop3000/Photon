@@ -4,6 +4,8 @@
  */
 import { normalizeDNA, editSequence, editSequenceBatch } from './dna.mjs';
 import { applyCircularGapEdit } from './circular-edit.mjs';
+import {validateFeature} from './feature-io.mjs';
+import {applyCompoundEdits} from './compound-edit.mjs';
 
 function assertLegacyFeature(f, length) {
   if (!f || !Number.isSafeInteger(f.start) || !Number.isSafeInteger(f.end)
@@ -67,6 +69,11 @@ export function applySequenceRevision(working, proposedSequence) {
     } else {
       assertLegacyFeature(feature, before.length);
     }
+  }
+  if(working.features.some(f=>Object.hasOwn(f,'segments'))){
+    working.features.forEach(f=>validateFeature(f,before.length,{circular:working.topology==='circular'}));
+    if(before===after)return {working:cloneState(working),changed:false,affectedFeatures:[],edit:null};
+    return applyCompoundEdits(working,revisionEdits(before,after));
   }
   const hasWrapped = working.features.some(f => f.start > f.end);
   if(hasWrapped) {
@@ -139,6 +146,7 @@ export function applyExplicitEdits(working, operations) {
         throw new RangeError('Invalid circular origin-spanning feature coordinates');
     }else assertLegacyFeature(f,before.length);
   }
+  if(working.features.some(f=>Object.hasOwn(f,'segments')))return applyCompoundEdits(working,edits);
   let current=cloneState(working);
   if(!current.features.some(f=>f.start>f.end)){
     const result=editSequenceBatch(before,current.features.map(f=>({...f,start:f.start-1})),edits);

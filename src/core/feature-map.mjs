@@ -3,10 +3,10 @@
  * One origin-spanning feature (start > end) is rendered as two disjoint
  * segments, but remains one logical feature with a single feature index.
  */
-import {splitCircularFeature} from './plasmid-map.mjs';
+import {featureIntervals} from './feature-io.mjs';
 export function featureMapSegments(feature,length,{view='circular'}={}){
  if(!['circular','linear'].includes(view))throw new RangeError('Unknown map view');
- const intervals=splitCircularFeature(feature,length);
+ const intervals=featureIntervals(feature,length,{circular:true});
  return intervals.map(({start,end})=>{
    const a=(start-1)/length,b=end/length;
    if(view==='linear')return {start,end,x:40+540*a,width:540*(b-a),startFraction:a,endFraction:b};

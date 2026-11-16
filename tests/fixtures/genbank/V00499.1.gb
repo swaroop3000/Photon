@@ -1,0 +1,272 @@
+LOCUS       V00499                  2052 bp    DNA     linear   PRI 14-NOV-2006
+DEFINITION  Human germ line gene for beta-globin.
+ACCESSION   V00499
+VERSION     V00499.1
+KEYWORDS    beta-globin; germ line; globin.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 2052)
+  AUTHORS   Lawn,R.M., Efstratiadis,A., O'Connell,C. and Maniatis,T.
+  TITLE     The nucleotide sequence of the human beta-globin gene
+  JOURNAL   Cell 21 (3), 647-651 (1980)
+   PUBMED   6254664
+COMMENT     KST HSA.BETGLOBIN.1.GL.
+FEATURES             Location/Qualifiers
+     source          1..2052
+                     /organism="Homo sapiens"
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:9606"
+     prim_transcript 104..1709
+     exon            104..245
+                     /number=1
+     CDS             join(154..245,376..598,1449..1577)
+                     /codon_start=1
+                     /product="beta globin"
+                     /protein_id="CAA23758.1"
+                     /db_xref="GDB:119297"
+                     /db_xref="GOA:P68871"
+                     /db_xref="HGNC:HGNC:4827"
+                     /db_xref="InterPro:IPR000971"
+                     /db_xref="InterPro:IPR002337"
+                     /db_xref="InterPro:IPR009050"
+                     /db_xref="InterPro:IPR012292"
+                     /db_xref="PDB:1A00"
+                     /db_xref="PDB:1A01"
+                     /db_xref="PDB:1A0U"
+                     /db_xref="PDB:1A0Z"
+                     /db_xref="PDB:1A3N"
+                     /db_xref="PDB:1A3O"
+                     /db_xref="PDB:1ABW"
+                     /db_xref="PDB:1ABY"
+                     /db_xref="PDB:1AJ9"
+                     /db_xref="PDB:1B86"
+                     /db_xref="PDB:1BAB"
+                     /db_xref="PDB:1BBB"
+                     /db_xref="PDB:1BIJ"
+                     /db_xref="PDB:1BUW"
+                     /db_xref="PDB:1BZ0"
+                     /db_xref="PDB:1BZ1"
+                     /db_xref="PDB:1BZZ"
+                     /db_xref="PDB:1C7B"
+                     /db_xref="PDB:1C7C"
+                     /db_xref="PDB:1C7D"
+                     /db_xref="PDB:1CBL"
+                     /db_xref="PDB:1CBM"
+                     /db_xref="PDB:1CH4"
+                     /db_xref="PDB:1CLS"
+                     /db_xref="PDB:1CMY"
+                     /db_xref="PDB:1COH"
+                     /db_xref="PDB:1DKE"
+                     /db_xref="PDB:1DXT"
+                     /db_xref="PDB:1DXU"
+                     /db_xref="PDB:1DXV"
+                     /db_xref="PDB:1FN3"
+                     /db_xref="PDB:1G9V"
+                     /db_xref="PDB:1GBU"
+                     /db_xref="PDB:1GBV"
+                     /db_xref="PDB:1GLI"
+                     /db_xref="PDB:1GZX"
+                     /db_xref="PDB:1HAB"
+                     /db_xref="PDB:1HAC"
+                     /db_xref="PDB:1HBA"
+                     /db_xref="PDB:1HBB"
+                     /db_xref="PDB:1HBS"
+                     /db_xref="PDB:1HCO"
+                     /db_xref="PDB:1HDB"
+                     /db_xref="PDB:1HGA"
+                     /db_xref="PDB:1HGB"
+                     /db_xref="PDB:1HGC"
+                     /db_xref="PDB:1HHO"
+                     /db_xref="PDB:1IRD"
+                     /db_xref="PDB:1J3Y"
+                     /db_xref="PDB:1J3Z"
+                     /db_xref="PDB:1J40"
+                     /db_xref="PDB:1J41"
+                     /db_xref="PDB:1J7S"
+                     /db_xref="PDB:1J7W"
+                     /db_xref="PDB:1J7Y"
+                     /db_xref="PDB:1JY7"
+                     /db_xref="PDB:1K0Y"
+                     /db_xref="PDB:1K1K"
+                     /db_xref="PDB:1KD2"
+                     /db_xref="PDB:1LFL"
+                     /db_xref="PDB:1LFQ"
+                     /db_xref="PDB:1LFT"
+                     /db_xref="PDB:1LFV"
+                     /db_xref="PDB:1LFY"
+                     /db_xref="PDB:1LFZ"
+                     /db_xref="PDB:1LJW"
+                     /db_xref="PDB:1M9P"
+                     /db_xref="PDB:1MKO"
+                     /db_xref="PDB:1NEJ"
+                     /db_xref="PDB:1NIH"
+                     /db_xref="PDB:1NQP"
+                     /db_xref="PDB:1O1I"
+                     /db_xref="PDB:1O1J"
+                     /db_xref="PDB:1O1K"
+                     /db_xref="PDB:1O1L"
+                     /db_xref="PDB:1O1M"
+                     /db_xref="PDB:1O1N"
+                     /db_xref="PDB:1O1O"
+                     /db_xref="PDB:1O1P"
+                     /db_xref="PDB:1QI8"
+                     /db_xref="PDB:1QSH"
+                     /db_xref="PDB:1QSI"
+                     /db_xref="PDB:1QXD"
+                     /db_xref="PDB:1QXE"
+                     /db_xref="PDB:1R1X"
+                     /db_xref="PDB:1R1Y"
+                     /db_xref="PDB:1RPS"
+                     /db_xref="PDB:1RQ3"
+                     /db_xref="PDB:1RQ4"
+                     /db_xref="PDB:1RQA"
+                     /db_xref="PDB:1RVW"
+                     /db_xref="PDB:1SDK"
+                     /db_xref="PDB:1SDL"
+                     /db_xref="PDB:1THB"
+                     /db_xref="PDB:1UIW"
+                     /db_xref="PDB:1VWT"
+                     /db_xref="PDB:1XXT"
+                     /db_xref="PDB:1XY0"
+                     /db_xref="PDB:1XYE"
+                     /db_xref="PDB:1XZ2"
+                     /db_xref="PDB:1XZ4"
+                     /db_xref="PDB:1XZ5"
+                     /db_xref="PDB:1XZ7"
+                     /db_xref="PDB:1XZU"
+                     /db_xref="PDB:1XZV"
+                     /db_xref="PDB:1Y09"
+                     /db_xref="PDB:1Y0A"
+                     /db_xref="PDB:1Y0C"
+                     /db_xref="PDB:1Y0D"
+                     /db_xref="PDB:1Y0T"
+                     /db_xref="PDB:1Y0W"
+                     /db_xref="PDB:1Y22"
+                     /db_xref="PDB:1Y2Z"
+                     /db_xref="PDB:1Y31"
+                     /db_xref="PDB:1Y35"
+                     /db_xref="PDB:1Y45"
+                     /db_xref="PDB:1Y46"
+                     /db_xref="PDB:1Y4B"
+                     /db_xref="PDB:1Y4F"
+                     /db_xref="PDB:1Y4G"
+                     /db_xref="PDB:1Y4P"
+                     /db_xref="PDB:1Y4Q"
+                     /db_xref="PDB:1Y4R"
+                     /db_xref="PDB:1Y4V"
+                     /db_xref="PDB:1Y5F"
+                     /db_xref="PDB:1Y5J"
+                     /db_xref="PDB:1Y5K"
+                     /db_xref="PDB:1Y7C"
+                     /db_xref="PDB:1Y7D"
+                     /db_xref="PDB:1Y7G"
+                     /db_xref="PDB:1Y7Z"
+                     /db_xref="PDB:1Y83"
+                     /db_xref="PDB:1Y85"
+                     /db_xref="PDB:1Y8W"
+                     /db_xref="PDB:1YDZ"
+                     /db_xref="PDB:1YE0"
+                     /db_xref="PDB:1YE1"
+                     /db_xref="PDB:1YE2"
+                     /db_xref="PDB:1YEN"
+                     /db_xref="PDB:1YEO"
+                     /db_xref="PDB:1YEQ"
+                     /db_xref="PDB:1YEU"
+                     /db_xref="PDB:1YEV"
+                     /db_xref="PDB:1YFF"
+                     /db_xref="PDB:1YG5"
+                     /db_xref="PDB:1YGD"
+                     /db_xref="PDB:1YGF"
+                     /db_xref="PDB:1YH9"
+                     /db_xref="PDB:1YHE"
+                     /db_xref="PDB:1YHR"
+                     /db_xref="PDB:1YIE"
+                     /db_xref="PDB:1YIH"
+                     /db_xref="PDB:1YVQ"
+                     /db_xref="PDB:1YVT"
+                     /db_xref="PDB:1YZI"
+                     /db_xref="PDB:2D5Z"
+                     /db_xref="PDB:2D60"
+                     /db_xref="PDB:2DN1"
+                     /db_xref="PDB:2DN2"
+                     /db_xref="PDB:2DN3"
+                     /db_xref="PDB:2DXM"
+                     /db_xref="PDB:2H35"
+                     /db_xref="PDB:2HBC"
+                     /db_xref="PDB:2HBD"
+                     /db_xref="PDB:2HBE"
+                     /db_xref="PDB:2HBF"
+                     /db_xref="PDB:2HBS"
+                     /db_xref="PDB:2HCO"
+                     /db_xref="PDB:2HHB"
+                     /db_xref="PDB:2HHD"
+                     /db_xref="PDB:2HHE"
+                     /db_xref="PDB:2W6V"
+                     /db_xref="PDB:2W72"
+                     /db_xref="PDB:2YRS"
+                     /db_xref="PDB:3B75"
+                     /db_xref="PDB:3D17"
+                     /db_xref="PDB:3D7O"
+                     /db_xref="PDB:3DUT"
+                     /db_xref="PDB:3HHB"
+                     /db_xref="PDB:3HXN"
+                     /db_xref="PDB:3IC0"
+                     /db_xref="PDB:3IC2"
+                     /db_xref="PDB:3KMF"
+                     /db_xref="PDB:3NL7"
+                     /db_xref="PDB:3NMM"
+                     /db_xref="PDB:4HHB"
+                     /db_xref="PDB:6HBW"
+                     /db_xref="UniProtKB/Swiss-Prot:P68871"
+                     /translation="MVHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFE
+                     SFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPE
+                     NFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH"
+     intron          246..375
+                     /number=1
+     exon            376..598
+                     /number=2
+     intron          599..1448
+                     /number=2
+     exon            1449..1709
+                     /number=3
+ORIGIN      
+        1 ccctgtggag ccacacccta gggttggcca atctactccc aggagcaggg agggcaggag
+       61 ccagggctgg gcataaaagt cagggcagag ccatctattg cttacatttg cttctgacac
+      121 aactgtgttc actagcaacc tcaaacagac accatggtgc acctgactcc tgaggagaag
+      181 tctgccgtta ctgccctgtg gggcaaggtg aacgtggatg aagttggtgg tgaggccctg
+      241 ggcaggttgg tatcaaggtt acaagacagg tttaaggaga ccaatagaaa ctgggcatgt
+      301 ggagacagag aagactcttg ggtttctgat aggcactgac tctctctgcc tattggtcta
+      361 ttttcccacc cttaggctgc tggtggtcta cccttggacc cagaggttct ttgagtcctt
+      421 tggggatctg tccactcctg atgctgttat gggcaaccct aaggtgaagg ctcatggcaa
+      481 gaaagtgctc ggtgccttta gtgatggcct ggctcacctg gacaacctca agggcacctt
+      541 tgccacactg agtgagctgc actgtgacaa gctgcacgtg gatcctgaga acttcagggt
+      601 gagtctatgg gacccttgat gttttctttc cccttctttt ctatggttaa gttcatgtca
+      661 taggaagggg agaagtaaca gggtacagtt tagaatggga aacagacgaa tgattgcatc
+      721 agtgtggaag tctcaggatc gttttagttt cttttatttg ctgttcataa caattgtttt
+      781 cttttgttta attcttgctt tctttttttt tcttctccgc aatttttact attatactta
+      841 atgccttaac attgtgtata acaaaaggaa atatctctga gatacattaa gtaacttaaa
+      901 aaaaaacttt acacagtctg cctagtacat tactatttgg aatatatgtg tgcttatttg
+      961 catattcata atctccctac tttattttct tttattttta attgatacat aatcattata
+     1021 catatttatg ggttaaagtg taatgtttta atatgtgtac acatattgac caaatcaggg
+     1081 taattttgca tttgtaattt taaaaaatgc tttcttcttt taatatactt ttttgtttat
+     1141 cttatttcta atactttccc taatctcttt ctttcagggc aataatgata caatgtatca
+     1201 tgcctctttg caccattcta aagaataaca gtgataattt ctgggttaag gcaatagcaa
+     1261 tatttctgca tataaatatt tctgcatata aattgtaact gatgtaagag gtttcatatt
+     1321 gctaatagca gctacaatcc agctaccatt ctgcttttat tttatggttg ggataaggct
+     1381 ggattattct gagtccaagc taggcccttt tgctaatcat gttcatacct cttatcttcc
+     1441 tcccacagct cctgggcaac gtgctggtct gtgtgctggc ccatcacttt ggcaaagaat
+     1501 tcaccccacc agtgcaggct gcctatcaga aagtggtggc tggtgtggct aatgccctgg
+     1561 cccacaagta tcactaagct cgctttcttg ctgtccaatt tctattaaag gttcctttgt
+     1621 tccctaagtc caactactaa actgggggat attatgaagg gccttgagca tctggattct
+     1681 gcctaataaa aaacatttat tttcattgca atgatgtatt taaattattt ctgaatattt
+     1741 tactaaaaag ggaatgtggg aggtcagtgc atttaaaaca taaagaaatg atgagctgtt
+     1801 caaaccttgg gaaaatacac tatatcttaa actccatgaa agaaggtgag gctgcaacca
+     1861 gctaatgcac attggcaaca gcccctgatg cctatgcctt attcatccct cagaaaagga
+     1921 ttcttgtaga ggcttgattt gcaggttaaa gttttgctat gctgtatttt acattactta
+     1981 ttgttttagc tgtcctcatg aatgtctttt cactacccat ttgcttatcc tgcatctctc
+     2041 tcagccttga ct
+//
+

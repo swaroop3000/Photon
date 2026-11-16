@@ -77,7 +77,7 @@ export function analyzeAnnotatedCDS(working){
      const terminalStop=aa.endsWith('*');
      const stopCount=[...aa.slice(0,-1)].filter(c=>c==='*').length;
      return {index,name:String(feature.name??'CDS '+(index+1)),valid:true,
-       start:feature.start,end:feature.end,strand:feature.strand??1,
+       start:feature.start,end:feature.end,...(feature.segments?{segments:structuredClone(feature.segments)}:{}),strand:feature.strand??1,
        nucleotideLength:nucleotides.length,annotatedLength:coding.annotatedLength,
        translationTable:coding.translationTable,codonStart:coding.codonStart,
        translationMatches:coding.translationMatches,

@@ -1,6 +1,9 @@
 /** Validate/open projects before the existing UI modules inspect the working construct. */
 import {createIndexedProjectStorage} from '../core/indexed-project-storage.mjs';
 import {createProjectCommands} from '../core/project-commands.mjs';
+import {hasCompoundAnnotations} from '../core/feature-capabilities.mjs';
+import {projectBackupFormat} from '../core/project-backup.mjs';
+globalThis.PhotonFeatureCapabilities={hasCompoundAnnotations,projectBackupFormat};
 import {interpretCDS} from '../core/cds-semantics.mjs';
 import {sequenceWindow} from '../core/sequence-window.mjs';
 import {curatedDigest,curatedRestrictionSites} from '../core/curated-digest.mjs';

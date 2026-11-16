@@ -21,3 +21,4 @@ jobs:
       - run: python scripts/validate-biopython.py
       - run: python scripts/validate-real-genbank.py
       - run: python scripts/validate-curated-enzymes.py
+      - run: python scripts/validate-compound-genbank.py

@@ -71,7 +71,7 @@ export function renderTranslationExplorer(){
        '\nReverse-strand coordinates refer to the original displayed DNA; linearized analysis excludes novel origin-spanning ORFs.';
      cds.textContent='Annotated CDS:\n'+(result.annotatedCDS.length?
        result.annotatedCDS.map(x=>x.name+': '+(x.valid?
-       x.start+'..'+x.end+' ('+(x.strand===-1?'-':'+')+
+       (x.segments?'join('+x.segments.map(p=>p.start+'..'+p.end).join(',')+')':x.start+'..'+x.end)+' ('+(x.strand===-1?'-':'+')+
        ') · table '+x.translationTable+' · codon_start '+x.codonStart+' · '+x.aminoAcidLength+' aa · '+(x.flags.join(', ')||'no heuristic flags')+
        '\n  Protein '+x.protein.slice(0,150)+(x.protein.length>150?'…':'')
        :'CDS not analyzed: '+x.error)).join('\n'):

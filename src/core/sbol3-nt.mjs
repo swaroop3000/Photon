@@ -47,6 +47,7 @@ export function serializeSbol3NTriples(w){
  add(sequence,pred('elements'),L(seq.toLowerCase()));
  add(sequence,pred('encoding'),I(IUPAC));
  for(const [index,f] of (w.features||[]).entries()){
+   if(Object.hasOwn(f,'segments'))throw new RangeError('Compound feature export is unsupported in this SBOL subset; use GenBank or a Photon archive');
    validateFeature(f,n,{circular:w.topology==='circular'});
    const node=component+'/feature'+(index+1);
    add(component,pred('hasFeature'),I(node));

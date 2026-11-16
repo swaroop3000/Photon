@@ -8,17 +8,37 @@ export function validateFeature(feature,length,{circular=false}={}){
  if(feature.start>feature.end&&!circular)throw new RangeError('Origin-spanning features require circular DNA');
  if(feature.strand!==undefined&&![-1,1].includes(feature.strand))
    throw new RangeError('Strand must be +1 or -1');
+ if(Object.hasOwn(feature,'segments')){
+   const segments=feature.segments;
+   if(!Array.isArray(segments)||segments.length<2||segments.length>1000)
+     throw new RangeError('Compound features require 2..1000 exact local segments');
+   let previous=0;
+   for(const part of segments){
+     if(!part||Object.keys(part).some(k=>!['start','end'].includes(k))||!Object.hasOwn(part,'start')||!Object.hasOwn(part,'end')||!Number.isSafeInteger(part.start)||!Number.isSafeInteger(part.end)||
+        part.start<1||part.end<part.start||part.end>length||part.start<=previous)
+       throw new RangeError('Compound segments must be ascending, disjoint exact intervals');
+     previous=part.end;
+   }
+   if(feature.start!==segments[0].start||feature.end!==segments.at(-1).end)
+     throw new RangeError('Compound feature envelope differs from its segments');
+ }
  return {...feature};
+}
+/** Genomic display order. Extraction reverses the complete concatenation for -1. */
+export function featureIntervals(feature,length,{circular=false}={}){
+ const f=validateFeature(feature,length,{circular});
+ return f.segments?f.segments.map(p=>({start:p.start,end:p.end})):
+   f.start<=f.end?[{start:f.start,end:f.end}]:[{start:f.start,end:length},{start:1,end:f.end}];
 }
 export function circularFeatureSequence(sequence,feature,{circular=false}={}){
  const seq=normalizeDNA(sequence),f=validateFeature(feature,seq.length,{circular});
- const forward=f.start<=f.end?seq.slice(f.start-1,f.end)
-   :seq.slice(f.start-1)+seq.slice(0,f.end);
+ const forward=featureIntervals(f,seq.length,{circular}).map(p=>seq.slice(p.start-1,p.end)).join('');
  return f.strand===-1?reverseComplement(forward):forward;
 }
 export function genbankFeatureLocation(feature,length,{circular=false}={}){
  const f=validateFeature(feature,length,{circular});
- const loc=f.start>f.end?'join('+f.start+'..'+length+',1..'+f.end+')':f.start+'..'+f.end;
+ const parts=featureIntervals(f,length,{circular}).map(p=>p.start+'..'+p.end);
+ const loc=parts.length>1?'join('+parts.join(',')+')':parts[0];
  return f.strand===-1?'complement('+loc+')':loc;
 }
 export function parseGenbankFeatureLocation(value,length,{circular=false}={}){
@@ -32,12 +52,22 @@ export function parseGenbankFeatureLocation(value,length,{circular=false}={}){
  else if(joined&&circular&&Number(joined[2])===length){
    start=Number(joined[1]);end=Number(joined[3]);
    if(start<=end)throw new RangeError('Circular join must cross origin');
+ }else if(inner.startsWith('join(')&&inner.endsWith(')')){
+   const pieces=inner.slice(5,-1).split(',');
+   if(pieces.length<2||pieces.length>1000)throw new RangeError('Unsupported GenBank compound segment count');
+   const segments=pieces.map(piece=>{
+     const m=piece.match(/^(\d+)(?:\.\.(\d+))?$/);
+     if(!m)throw new RangeError('Unsupported GenBank compound location: '+value);
+     return {start:Number(m[1]),end:Number(m[2]??m[1])};
+   });
+   try{return validateFeature({start:segments[0].start,end:segments.at(-1).end,strand:reverse?-1:1,segments},length,{circular});}
+   catch(error){throw new RangeError('Unsupported GenBank compound location: '+error.message);}
  }else throw new RangeError('Unsupported GenBank feature location: '+value);
  return validateFeature({start,end,strand:reverse?-1:1},length,{circular});
 }
 // Unquoted INSDC forms whose lexical syntax is retained without guessing.
 const unquotedQualifiers={
- codon_start:/^[123]$/,transl_table:/^[1-9]\d*$/,citation:/^\[[1-9]\d*\]$/,
+ number:/^\d+$/,codon_start:/^[123]$/,transl_table:/^[1-9]\d*$/,citation:/^\[[1-9]\d*\]$/,
  rpt_type:/^(tandem|inverted|flanking|terminal|direct|dispersed|other)$/,
  direction:/^(left|right|both)$/
 };
@@ -46,6 +76,7 @@ const flagQualifiers=new Set(['pseudo','partial','ribosomal_slippage','trans_spl
 function qualifierText(key,value){
  if(value===true&&flagQualifiers.has(key))return '/'+key;
  if(typeof value!=='string')throw new RangeError('Unsupported GenBank qualifier value: '+key);
+ if(key==='number'&&!unquotedQualifiers.number.test(value))return '/'+key+'='+quoteQualifier(value);
  if(Object.hasOwn(unquotedQualifiers,key)){
    if(!unquotedQualifiers[key].test(value))throw new RangeError('Invalid GenBank qualifier value: '+key);
    return '/'+key+'='+value;
@@ -93,7 +124,7 @@ export function serializeGenbank(working){
  * Supported: one LOCUS/ORIGIN record, single positions, simple ranges,
  * origin-spanning two-part joins, complement, quoted/repeated qualifiers, known
  * valueless flags and selected unquoted tokens. Remote, fuzzy, order and
- * multi-exon joins are rejected because the current feature model cannot retain them.
+ * mixed-strand or non-monotonic joins are rejected; exact local exon joins retain segments.
  */
 export function parseGenbank(text){
  if(typeof text!=='string')throw new TypeError('GenBank must be text');

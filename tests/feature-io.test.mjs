@@ -87,8 +87,8 @@ test('external GenBank-style record imports source, wrapped, reverse and single-
  ]);
  assert.deepEqual(parseGenbank(serializeGenbank(parsed)).features,parsed.features);
 });
-test('external GenBank unsupported fuzzy, multi-exon or remote features fail closed',()=>{
- for(const bad of ['<4..8','join(2..4,8..12)','AB123:2..5','order(1..2,4..5)']){
+test('external GenBank unsupported fuzzy, mixed-strand or remote features fail closed',()=>{
+ for(const bad of ['<4..8','join(2..4,complement(8..12))','AB123:2..5','order(1..2,4..5)']){
    assert.throws(()=>parseGenbank(externalGenbank.replace('5..10',bad)),/Unsupported/);
  }
 });

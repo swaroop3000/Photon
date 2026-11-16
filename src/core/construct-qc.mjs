@@ -3,7 +3,7 @@
  * Circular origin-spanning features use start>end as two sequential intervals.
  */
 import {normalizeDNA,gcContent,reverseComplement,translate} from './dna.mjs';
-import {validateFeature} from './feature-io.mjs';
+import {validateFeature,featureIntervals} from './feature-io.mjs';
 import {interpretCDS} from './cds-semantics.mjs';
 const STOPS=new Set(['TAA','TAG','TGA']);
 function warning(code,severity,message,extra={}){
@@ -129,7 +129,7 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
        valid:false,problems:['INVALID_FEATURE']};
    }
    const problems=[],cds=String(f.type??'').toLowerCase()==='cds';
-   const length=f.start<=f.end?f.end-f.start+1:n-f.start+1+f.end;
+   const length=featureIntervals(f,n,{circular}).reduce((sum,p)=>sum+p.end-p.start+1,0);
    if(f.affected){
      problems.push('AFFECTED_ANNOTATION');
      warnings.push(warning('AFFECTED_ANNOTATION','warning',
@@ -177,10 +177,11 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
     }
    }
    return {index,name:String(f.name??'unnamed'),type:String(f.type??''),
-     start:f.start,end:f.end,strand:f.strand??1,length,valid:true,problems};
+     start:f.start,end:f.end,...(f.segments?{segments:structuredClone(f.segments)}:{}),strand:f.strand??1,length,valid:true,problems};
  });
  // Annotation overlaps are descriptive; intentional nested biology is common.
- const occupied=features.filter(f=>f.valid&&f.start<=f.end);
+ if(features.some(f=>f.segments))warnings.push(warning('COMPOUND_STATISTICS_EXCLUDED','info','Compound CDS use spliced sequence. Compound features are excluded from contiguous overlap and adjacent-boundary statistics.'));
+ const occupied=features.filter(f=>f.valid&&!f.segments&&f.start<=f.end);
  let overlaps=0;
  for(let i=0;i<occupied.length;i++)for(let j=i+1;j<occupied.length;j++){
    if(occupied[i].start<=occupied[j].end&&occupied[j].start<=occupied[i].end)overlaps++;
@@ -221,7 +222,8 @@ export function analyzeConstructQC(working,{homopolymerMin=8,tandemMinUnits=4,
      coordinates:'1-based inclusive features; predicted ORFs on linearized strands',
      CDS:'CDS tables 1 and 11 with codon_start; unsupported biological instructions are reported, not translated. ORF scans use standard code and an ATG heuristic',
      restrictions:'No enzyme or wet-lab validation',
-     junctions:'Adjacent annotation boundaries only, no sequence-source verification',
+     junctions:'Adjacent contiguous annotation boundaries only; compound/wrapped features excluded. No sequence-source verification',
+     overlaps:'Contiguous non-wrapped annotation pairs only; compound/wrapped features excluded',
      coverage:'Advisory sequence analysis only; does not establish construct viability'
    }
  };

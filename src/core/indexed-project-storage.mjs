@@ -1,11 +1,13 @@
 /** Active project/library backend. Migration and revision checks are transactional.
  * Legacy source keys are retained. They are never used as an automatic fallback.
  */
+import {hasCompoundAnnotations} from './feature-capabilities.mjs';
 import {validateProjectDatabase} from './project-backup.mjs';
 import {isProjectStorageKey,PRIMARY_PROJECT_KEY,sha256} from './project-archive.mjs';
 import {ProjectStorageError} from './project-storage.mjs';
 export const PROJECT_DATABASE='photon-projects';
 export const PROJECT_STORE_FORMAT='photon/active-project-store/1';
+export const COMPOUND_PROJECT_STORE_FORMAT='photon/active-project-store/2';
 
 function legacyEntries(storage){
  const entries=[];
@@ -20,7 +22,7 @@ function legacyEntries(storage){
 }
 const fingerprint=entries=>sha256(JSON.stringify(entries));
 function header(record){
- if(record?.format!==PROJECT_STORE_FORMAT||record.id!=='active'||
+ if(![PROJECT_STORE_FORMAT,COMPOUND_PROJECT_STORE_FORMAT].includes(record?.format)||record.id!=='active'||
     !Number.isSafeInteger(record.revision)||record.revision<1||
     typeof record.legacyHash!=='string'||!/^[a-f0-9]{64}$/.test(record.legacyHash))
   throw new Error('Unsupported or corrupt active project-store header');
@@ -114,7 +116,10 @@ export function createIndexedProjectStorage({indexedDB=globalThis.indexedDB,lega
    ensureFence({restore});
    const nextRevision=expectedRevision+1;
    if(!Number.isSafeInteger(nextRevision))throw new Error('Project revision overflow');
-   const next={id:'active',format:PROJECT_STORE_FORMAT,revision:nextRevision,legacyHash:hash,data:JSON.parse(raw)};
+   // Conservative format fence: old clients must refuse all data containing
+   // segment metadata, including historical snapshots and saved backbones.
+   const compound=hasCompoundAnnotations(data)||[...libraries.values(),...entries.map(e=>e.raw),...changes.map(e=>e.raw)].some(hasCompoundAnnotations);
+   const next={id:'active',format:compound?COMPOUND_PROJECT_STORE_FORMAT:PROJECT_STORE_FORMAT,revision:nextRevision,legacyHash:hash,data:JSON.parse(raw)};
    const initialRows=entries.filter(e=>e.key!==PRIMARY_PROJECT_KEY);
    const priorRows=await transaction('readwrite',({state,libs,migrations,result,fail})=>{
     const current=state.get('active');let previousRecord;
@@ -130,7 +135,7 @@ export function createIndexedProjectStorage({indexedDB=globalThis.indexedDB,lega
     current.onsuccess=()=>{
      try{
       if((current.result?.revision??0)!==expectedRevision)throw new Error('Projects changed in another tab or action. Export recovery and reload before editing');
-      if(current.result)header(current.result);
+      if(current.result){header(current.result);if(current.result.format===COMPOUND_PROJECT_STORE_FORMAT)next.format=COMPOUND_PROJECT_STORE_FORMAT;}
       previousRecord=current.result;
       // Recheck the source immediately before enqueuing writes; it is preserved,
       // never moved/deleted. Old applications must not remain open during cutover.

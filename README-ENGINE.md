@@ -39,7 +39,7 @@ This is a scientific *foundation*, not a certified clinical engine. The motif fi
 
 Separate modules implement restriction cuts, supported GenBank/SBOL subsets and
 conservative circular-gap edits; their contracts appear in `FORMAT-SUPPORT.md`.
-Full INSDC compound features and broad scientific validation remain open. Projects
+Exact local exon joins use authoritative segments, spliced extraction and conservative liftover. Broader INSDC compound grammar and independent scientific validation remain open. Compound data activates record/file version-2 compatibility fences; see STORAGE.md before changing software versions. Projects
 use a revisioned IndexedDB backend with coordinated project/library migration,
 explicit backup/restore and a separate recovery vault, not remote Git persistence.
 See `STORAGE.md` for asynchronous save acknowledgement and recovery boundaries.

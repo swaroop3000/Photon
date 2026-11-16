@@ -146,3 +146,29 @@ projects and libraries first; an old backend may not have sufficient quota to ho
 newer data. Do not manually delete the migration marker to bypass recovery checks.
 Independent cutover/rollback review and broader browser validation remain required
 before release approval.
+
+## Compound annotation compatibility — November 16
+
+Saving compound annotations in working DNA, historical snapshots or saved
+backbones upgrades the active record header to `photon/active-project-store/2`
+inside the same project/library transaction. An aborted save leaves the earlier
+header and data unchanged. Once upgraded, the active header does not silently
+downgrade after undo or plain-data restore. IndexedDB object-store schema stays at
+version 1. Current code reads header versions 1 and 2; unknown versions fail closed.
+The pinned historical backend at `dc57660` is exercised in Chromium: it refuses
+the v2 header, blocks writes and preserves the active record. This tests that
+backend's compatibility contract, not every historical Photon UI/storage system.
+Legacy localStorage source bytes remain unchanged and may be older than active data.
+
+Compound project backups, browser archives and backbone libraries use their
+respective `/2` format identifiers. New readers accept `/1` and `/2`; exports
+without compound data remain `/1`. Existing project/entry/file limits apply.
+Version-2 files preserve exact segment metadata; older validators are expected to
+refuse the unfamiliar format rather than reinterpret segments as one interval.
+Unversioned native bundle exports are refused when any repository snapshot contains
+compound annotations; use project backups/archives instead. SBOL subset exports
+also refuse unsupported compound locations. GenBank writes the exact supported join.
+
+No automatic downgrade to software without compound support is implemented. This
+is a feature-branch compatibility change requiring release/cutover review before
+main merge or production promotion, not a production migration performed here.
